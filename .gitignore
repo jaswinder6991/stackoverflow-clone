@@ -1,0 +1,58 @@
+# === General ===
+*.log
+.env
+.env.*
+.DS_Store
+*.pyc
+__pycache__/
+.vscode/
+.idea/
+*.swp
+
+# === Node.js / Next.js (frontend) ===
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+frontend/.turbo/
+frontend/coverage/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# === Python / FastAPI (backend) ===
+backend/__pycache__/
+backend/*.pyc
+backend/env/
+backend/.venv/
+backend/venv/
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+backend/.env
+backend/.env.*
+backend/instance/
+backend/.pdm-python
+backend/.ruff_cache/
+
+# === Docker ===
+**/docker-compose.override.yml
+**/.docker/
+**/.dockerignore
+
+# === OS / Editor / Build Artifacts ===
+*.bak
+*.tmp
+*.coverage
+*.sqlite3
+*.db
+*.db-journal
+*.pid
+*.seed
+*.tgz
+*.tar.gz
+
+# === Git ===
+*.orig

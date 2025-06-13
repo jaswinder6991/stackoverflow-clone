@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "javascript",
+    "description": "For questions about the JavaScript programming language",
+    "count": 254328
+  },
+  {
+    "id": 2,
+    "name": "python",
+    "description": "For questions about the Python programming language",
+    "count": 198745
+  },
+  {
+    "id": 3,
+    "name": "java",
+    "description": "For questions about the Java programming language",
+    "count": 178623
+  },
+  {
+    "id": 4,
+    "name": "typescript",
+    "description": "For questions about TypeScript, a typed superset of JavaScript",
+    "count": 156789
+  },
+  {
+    "id": 5,
+    "name": "react",
+    "description": "For questions about React, a JavaScript library for building user interfaces",
+    "count": 145234
+  },
+  {
+    "id": 6,
+    "name": "nextjs",
+    "description": "For questions about Next.js, a React framework",
+    "count": 89456
+  },
+  {
+    "id": 7,
+    "name": "nodejs",
+    "description": "For questions about Node.js, a JavaScript runtime",
+    "count": 123567
+  },
+  {
+    "id": 8,
+    "name": "html",
+    "description": "For questions about HTML markup language",
+    "count": 87345
+  },
+  {
+    "id": 9,
+    "name": "css",
+    "description": "For questions about CSS styling",
+    "count": 76234
+  },
+  {
+    "id": 10,
+    "name": "sql",
+    "description": "For questions about SQL database queries",
+    "count": 65123
+  },
+  {
+    "id": 11,
+    "name": "angular",
+    "description": "For questions about Angular framework",
+    "count": 92456
+  },
+  {
+    "id": 12,
+    "name": "vue",
+    "description": "For questions about Vue.js framework",
+    "count": 54321
+  },
+  {
+    "id": 13,
+    "name": "express",
+    "description": "For questions about Express.js framework",
+    "count": 43210
+  },
+  {
+    "id": 14,
+    "name": "mongodb",
+    "description": "For questions about MongoDB database",
+    "count": 38765
+  },
+  {
+    "id": 15,
+    "name": "postgresql",
+    "description": "For questions about PostgreSQL database",
+    "count": 45678
+  },
+  {
+    "id": 16,
+    "name": "mysql",
+    "description": "For questions about MySQL database",
+    "count": 56789
+  },
+  {
+    "id": 17,
+    "name": "docker",
+    "description": "For questions about Docker containerization",
+    "count": 67890
+  },
+  {
+    "id": 18,
+    "name": "aws",
+    "description": "For questions about Amazon Web Services",
+    "count": 78901
+  },
+  {
+    "id": 19,
+    "name": "git",
+    "description": "For questions about Git version control",
+    "count": 89012
+  },
+  {
+    "id": 20,
+    "name": "redux",
+    "description": "For questions about Redux state management",
+    "count": 34567
+  }
+]

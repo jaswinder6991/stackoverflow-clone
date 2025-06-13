@@ -1,0 +1,116 @@
+[
+  {
+    "id": 1,
+    "content": "<p>Here's a comprehensive approach to implementing authentication in React:</p><h3>1. JWT Token Management</h3><p>Store JWT tokens in localStorage or sessionStorage (for session-only auth). Create an auth service to handle token operations:</p><pre><code>// authService.js\nexport const authService = {\n  getToken: () => localStorage.getItem('token'),\n  setToken: (token) => localStorage.setItem('token', token),\n  removeToken: () => localStorage.removeItem('token'),\n  isAuthenticated: () => !!authService.getToken()\n};</code></pre><h3>2. Protected Routes</h3><p>Create a PrivateRoute component to protect authenticated routes:</p><pre><code>import { Navigate } from 'react-router-dom';\n\nconst PrivateRoute = ({ children }) => {\n  return authService.isAuthenticated() ? children : <Navigate to=\"/login\" />;\n};</code></pre><h3>3. Auth Context</h3><p>Use React Context to manage auth state globally:</p><pre><code>const AuthContext = createContext();\n\nexport const AuthProvider = ({ children }) => {\n  const [user, setUser] = useState(null);\n  const [loading, setLoading] = useState(true);\n\n  // Auth methods here\n  \n  return (\n    <AuthContext.Provider value={{ user, login, logout, loading }}>\n      {children}\n    </AuthContext.Provider>\n  );\n};</code></pre><p>This approach provides secure authentication with proper token management and route protection.</p>",
+    "author": {
+      "id": 2,
+      "name": "Bozho",
+      "reputation": 17430,
+      "avatar": "https://www.gravatar.com/avatar/sample1?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 15,
+        "silver": 45,
+        "bronze": 78
+      }
+    },
+    "votes": 42,
+    "is_accepted": true,
+    "answered": "1 hour ago",
+    "question_id": 1
+  },
+  {
+    "id": 2,
+    "content": "<p>You can also consider using libraries like Auth0 or Firebase Auth for a more robust solution:</p><h3>Auth0 Integration</h3><pre><code>import { useAuth0 } from '@auth0/auth0-react';\n\nconst LoginButton = () => {\n  const { loginWithRedirect } = useAuth0();\n  return (\n    <button onClick={() => loginWithRedirect()}>\n      Log In\n    </button>\n  );\n};</code></pre><p>This handles all the security complexities for you and provides features like social login, MFA, etc.</p>",
+    "author": {
+      "id": 5,
+      "name": "CodeMaster",
+      "reputation": 23456,
+      "avatar": "https://www.gravatar.com/avatar/codemaster?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 20,
+        "silver": 60,
+        "bronze": 120
+      }
+    },
+    "votes": 18,
+    "is_accepted": false,
+    "answered": "45 minutes ago",
+    "question_id": 1
+  },
+  {
+    "id": 3,
+    "content": "<p>Great question! Here are the key differences between var, let, and const:</p><h3>var</h3><ul><li>Function-scoped or globally-scoped</li><li>Can be redeclared and updated</li><li>Hoisted and initialized with undefined</li></ul><pre><code>function example() {\n  if (true) {\n    var x = 1;\n  }\n  console.log(x); // 1 (accessible outside block)\n}</code></pre><h3>let</h3><ul><li>Block-scoped</li><li>Can be updated but not redeclared in same scope</li><li>Hoisted but not initialized (temporal dead zone)</li></ul><pre><code>function example() {\n  if (true) {\n    let y = 1;\n  }\n  console.log(y); // ReferenceError: y is not defined\n}</code></pre><h3>const</h3><ul><li>Block-scoped</li><li>Cannot be updated or redeclared</li><li>Must be initialized at declaration</li><li>Objects/arrays can still be mutated</li></ul><pre><code>const z = 1;\nz = 2; // TypeError: Assignment to constant variable\n\nconst obj = { a: 1 };\nobj.a = 2; // This works! Object is mutable</code></pre><p><strong>Best Practice:</strong> Use const by default, let when you need to reassign, avoid var.</p>",
+    "author": {
+      "id": 6,
+      "name": "ReactExpert",
+      "reputation": 15678,
+      "avatar": "https://www.gravatar.com/avatar/reactexpert?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 12,
+        "silver": 35,
+        "bronze": 80
+      }
+    },
+    "votes": 65,
+    "is_accepted": true,
+    "answered": "2 hours ago",
+    "question_id": 2
+  },
+  {
+    "id": 4,
+    "content": "<p>For large React applications, here's my recommended state management approach:</p><h3>1. Local State First</h3><p>Start with useState and useReducer for component-level state. Don't lift state up unless multiple components need it.</p><h3>2. Context API for Theme/Auth</h3><p>Use Context API for global state that doesn't change frequently:</p><pre><code>// Good for:\n- User authentication\n- Theme/dark mode\n- Language/i18n\n\n// Not good for:\n- Frequently changing data\n- Complex state logic</code></pre><h3>3. Redux Toolkit for Complex State</h3><p>When you have complex state logic, use Redux Toolkit:</p><pre><code>import { createSlice } from '@reduxjs/toolkit';\n\nconst todosSlice = createSlice({\n  name: 'todos',\n  initialState: [],\n  reducers: {\n    addTodo: (state, action) => {\n      state.push(action.payload);\n    }\n  }\n});</code></pre><h3>4. Server State with React Query</h3><p>For server state, use React Query or SWR:</p><pre><code>import { useQuery } from 'react-query';\n\nfunction Posts() {\n  const { data, isLoading } = useQuery('posts', fetchPosts);\n  // Handles caching, refetching, etc.\n}</code></pre><p>This combination gives you the best of all worlds!</p>",
+    "author": {
+      "id": 7,
+      "name": "PythonGuru",
+      "reputation": 19876,
+      "avatar": "https://www.gravatar.com/avatar/pythonguru?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 18,
+        "silver": 50,
+        "bronze": 95
+      }
+    },
+    "votes": 89,
+    "is_accepted": true,
+    "answered": "3 hours ago",
+    "question_id": 3
+  },
+  {
+    "id": 5,
+    "content": "<p>Here are the essential best practices for Node.js API design:</p><h3>1. RESTful Design</h3><pre><code>// Good URL structure\nGET    /api/users          // Get all users\nGET    /api/users/:id      // Get specific user\nPOST   /api/users          // Create user\nPUT    /api/users/:id      // Update user\nDELETE /api/users/:id      // Delete user</code></pre><h3>2. Error Handling</h3><pre><code>// Centralized error handling\napp.use((err, req, res, next) => {\n  const { statusCode = 500, message } = err;\n  res.status(statusCode).json({\n    success: false,\n    error: message,\n    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })\n  });\n});</code></pre><h3>3. Input Validation</h3><pre><code>const { body, validationResult } = require('express-validator');\n\nconst validateUser = [\n  body('email').isEmail(),\n  body('password').isLength({ min: 6 }),\n  (req, res, next) => {\n    const errors = validationResult(req);\n    if (!errors.isEmpty()) {\n      return res.status(400).json({ errors: errors.array() });\n    }\n    next();\n  }\n];</code></pre><h3>4. Consistent Response Format</h3><pre><code>// Success response\n{\n  \"success\": true,\n  \"data\": { ... },\n  \"message\": \"Operation successful\"\n}\n\n// Error response\n{\n  \"success\": false,\n  \"error\": \"Error message\",\n  \"code\": \"ERROR_CODE\"\n}</code></pre><p>These practices will make your API maintainable and developer-friendly!</p>",
+    "author": {
+      "id": 8,
+      "name": "JavaNinja",
+      "reputation": 11234,
+      "avatar": "https://www.gravatar.com/avatar/javaninja?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 9,
+        "silver": 28,
+        "bronze": 65
+      }
+    },
+    "votes": 56,
+    "is_accepted": true,
+    "answered": "4 hours ago",
+    "question_id": 4
+  },
+  {
+    "id": 6,
+    "content": "<p>PostgreSQL query optimization is crucial for performance. Here's a comprehensive guide:</p><h3>1. Index Optimization</h3><pre><code>-- Create indexes on frequently queried columns\nCREATE INDEX idx_users_email ON users(email);\nCREATE INDEX idx_posts_created_at ON posts(created_at DESC);\n\n-- Composite indexes for multi-column queries\nCREATE INDEX idx_posts_author_status ON posts(author_id, status);</code></pre><h3>2. Query Analysis</h3><pre><code>-- Use EXPLAIN ANALYZE to understand query execution\nEXPLAIN ANALYZE SELECT * FROM posts \nWHERE author_id = 123 AND status = 'published';\n\n-- Look for:\n-- Seq Scan (bad) vs Index Scan (good)\n-- High cost values\n-- Long execution times</code></pre><h3>3. Query Optimization Techniques</h3><pre><code>-- Use LIMIT for pagination\nSELECT * FROM posts ORDER BY created_at DESC LIMIT 20 OFFSET 40;\n\n-- Avoid SELECT *, specify columns\nSELECT id, title, created_at FROM posts;\n\n-- Use EXISTS instead of IN for subqueries\nSELECT * FROM users u WHERE EXISTS (\n  SELECT 1 FROM posts p WHERE p.author_id = u.id\n);</code></pre><h3>4. Connection Pooling</h3><pre><code>// Use connection pooling\nconst pool = new Pool({\n  connectionString: process.env.DATABASE_URL,\n  max: 20,\n  idleTimeoutMillis: 30000,\n  connectionTimeoutMillis: 2000,\n});</code></pre><p>Monitor your queries with tools like pg_stat_statements and pgBadger for continuous optimization!</p>",
+    "author": {
+      "id": 9,
+      "name": "FullStackDev",
+      "reputation": 14567,
+      "avatar": "https://www.gravatar.com/avatar/fullstackdev?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 11,
+        "silver": 32,
+        "bronze": 75
+      }
+    },
+    "votes": 73,
+    "is_accepted": true,
+    "answered": "5 hours ago",
+    "question_id": 5
+  }
+]

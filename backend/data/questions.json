@@ -1,0 +1,317 @@
+[
+  {
+    "id": 1,
+    "title": "How to implement authentication in React?",
+    "content": "I'm building a React application and need to implement user authentication. What are the best practices for handling user login, logout, and protecting routes? I've heard about JWT tokens but I'm not sure how to implement them securely.",
+    "author": {
+      "id": 1,
+      "name": "Max A.",
+      "reputation": 4892,
+      "avatar": "https://www.gravatar.com/avatar/9a6a8a571b7c47685b3ee15cfbd1e3dc?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 6,
+        "silver": 30,
+        "bronze": 29
+      }
+    },
+    "votes": 23,
+    "views": 1500,
+    "asked": "2 hours ago",
+    "modified": "1 hour ago",
+    "tags": ["react", "authentication", "javascript", "jwt"]
+  },
+  {
+    "id": 2,
+    "title": "What's the difference between var, let, and const in JavaScript?",
+    "content": "I'm confused about the differences between var, let, and const in JavaScript. Can someone explain when to use each one and what the scope differences are? I keep getting unexpected behavior in my code.",
+    "author": {
+      "id": 2,
+      "name": "Bozho",
+      "reputation": 17430,
+      "avatar": "https://www.gravatar.com/avatar/sample1?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 15,
+        "silver": 45,
+        "bronze": 78
+      }
+    },
+    "votes": 45,
+    "views": 3200,
+    "asked": "3 hours ago",
+    "modified": "2 hours ago",
+    "tags": ["javascript", "variables", "scope"]
+  },
+  {
+    "id": 3,
+    "title": "How to handle state management in large React applications?",
+    "content": "As my React application grows, managing state becomes more complex. What are the recommended patterns for state management in large applications? Should I use Redux, Context API, or something else?",
+    "author": {
+      "id": 3,
+      "name": "John Developer",
+      "reputation": 8543,
+      "avatar": "https://www.gravatar.com/avatar/sample2?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 3,
+        "silver": 18,
+        "bronze": 42
+      }
+    },
+    "votes": 67,
+    "views": 4500,
+    "asked": "5 hours ago",
+    "modified": "3 hours ago",
+    "tags": ["react", "state-management", "redux", "context-api"]
+  },
+  {
+    "id": 4,
+    "title": "Best practices for API design in Node.js",
+    "content": "I'm designing a REST API in Node.js and want to follow best practices. What are the key principles I should follow for a well-designed API? How should I handle errors, validation, and authentication?",
+    "author": {
+      "id": 4,
+      "name": "Sarah Chen",
+      "reputation": 12345,
+      "avatar": "https://www.gravatar.com/avatar/sarah?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 8,
+        "silver": 25,
+        "bronze": 55
+      }
+    },
+    "votes": 34,
+    "views": 2800,
+    "asked": "6 hours ago",
+    "modified": "4 hours ago",
+    "tags": ["nodejs", "api", "rest", "express"]
+  },
+  {
+    "id": 5,
+    "title": "How to optimize database queries in PostgreSQL?",
+    "content": "My PostgreSQL queries are running slowly on large datasets. What are some techniques to optimize query performance? I've heard about indexing but I'm not sure how to implement it effectively.",
+    "author": {
+      "id": 5,
+      "name": "CodeMaster",
+      "reputation": 23456,
+      "avatar": "https://www.gravatar.com/avatar/codemaster?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 20,
+        "silver": 60,
+        "bronze": 120
+      }
+    },
+    "votes": 56,
+    "views": 3700,
+    "asked": "8 hours ago",
+    "modified": "5 hours ago",
+    "tags": ["postgresql", "database", "performance", "sql"]
+  },
+  {
+    "id": 6,
+    "title": "Understanding closures in JavaScript",
+    "content": "I keep hearing about closures in JavaScript but don't fully understand them. Can someone explain what they are and provide practical examples? How do they work with scope and memory?",
+    "author": {
+      "id": 6,
+      "name": "ReactExpert",
+      "reputation": 15678,
+      "avatar": "https://www.gravatar.com/avatar/reactexpert?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 12,
+        "silver": 35,
+        "bronze": 80
+      }
+    },
+    "votes": 78,
+    "views": 5200,
+    "asked": "12 hours ago",
+    "modified": "8 hours ago",
+    "tags": ["javascript", "closures", "functions", "scope"]
+  },
+  {
+    "id": 7,
+    "title": "How to implement JWT authentication in Express.js?",
+    "content": "I need to implement JWT-based authentication in my Express.js application. What's the proper way to handle JWT tokens on both client and server side? How do I secure the tokens and handle refresh tokens?",
+    "author": {
+      "id": 7,
+      "name": "PythonGuru",
+      "reputation": 19876,
+      "avatar": "https://www.gravatar.com/avatar/pythonguru?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 18,
+        "silver": 50,
+        "bronze": 95
+      }
+    },
+    "votes": 89,
+    "views": 6700,
+    "asked": "1 day ago",
+    "modified": "12 hours ago",
+    "tags": ["jwt", "authentication", "security", "express", "nodejs"]
+  },
+  {
+    "id": 8,
+    "title": "What are React hooks and how to use them?",
+    "content": "React hooks seem powerful but I'm not sure how to use them effectively. Can someone explain the most commonly used hooks with examples? What are the rules of hooks and common pitfalls?",
+    "author": {
+      "id": 8,
+      "name": "JavaNinja",
+      "reputation": 11234,
+      "avatar": "https://www.gravatar.com/avatar/javaninja?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 9,
+        "silver": 28,
+        "bronze": 65
+      }
+    },
+    "votes": 92,
+    "views": 8900,
+    "asked": "1 day ago",
+    "modified": "18 hours ago",
+    "tags": ["react", "hooks", "usestate", "useeffect"]
+  },
+  {
+    "id": 9,
+    "title": "How to deploy a Next.js application to Vercel?",
+    "content": "I've built a Next.js application and want to deploy it to Vercel. What's the deployment process and are there any gotchas I should know about? How do I handle environment variables and database connections?",
+    "author": {
+      "id": 9,
+      "name": "FullStackDev",
+      "reputation": 14567,
+      "avatar": "https://www.gravatar.com/avatar/fullstackdev?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 11,
+        "silver": 32,
+        "bronze": 75
+      }
+    },
+    "votes": 43,
+    "views": 2300,
+    "asked": "2 days ago",
+    "modified": "1 day ago",
+    "tags": ["nextjs", "vercel", "deployment", "react"]
+  },
+  {
+    "id": 10,
+    "title": "Understanding async/await in JavaScript",
+    "content": "I'm learning about asynchronous JavaScript and async/await syntax. How does it work and when should I use it instead of promises? What are the performance implications and best practices?",
+    "author": {
+      "id": 10,
+      "name": "AIEnthusiast",
+      "reputation": 9876,
+      "avatar": "https://www.gravatar.com/avatar/aienthusiast?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 7,
+        "silver": 22,
+        "bronze": 48
+      }
+    },
+    "votes": 65,
+    "views": 4100,
+    "asked": "2 days ago",
+    "modified": "1 day ago",
+    "tags": ["javascript", "async-await", "promises", "asynchronous"]
+  },
+  {
+    "id": 11,
+    "title": "How to set up Docker for a Node.js application?",
+    "content": "I want to containerize my Node.js application using Docker. What's the best way to create a Dockerfile for a Node.js app? How do I handle dependencies, environment variables, and multi-stage builds?",
+    "author": {
+      "id": 1,
+      "name": "Max A.",
+      "reputation": 4892,
+      "avatar": "https://www.gravatar.com/avatar/9a6a8a571b7c47685b3ee15cfbd1e3dc?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 6,
+        "silver": 30,
+        "bronze": 29
+      }
+    },
+    "votes": 38,
+    "views": 2900,
+    "asked": "3 days ago",
+    "modified": "2 days ago",
+    "tags": ["docker", "nodejs", "containerization", "devops"]
+  },
+  {
+    "id": 12,
+    "title": "CSS Grid vs Flexbox: When to use which?",
+    "content": "I'm confused about when to use CSS Grid versus Flexbox. What are the main differences and use cases for each? Can you provide practical examples of when one is better than the other?",
+    "author": {
+      "id": 2,
+      "name": "Bozho",
+      "reputation": 17430,
+      "avatar": "https://www.gravatar.com/avatar/sample1?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 15,
+        "silver": 45,
+        "bronze": 78
+      }
+    },
+    "votes": 72,
+    "views": 5600,
+    "asked": "3 days ago",
+    "modified": "2 days ago",
+    "tags": ["css", "grid", "flexbox", "layout"]
+  },
+  {
+    "id": 13,
+    "title": "How to handle form validation in React?",
+    "content": "What's the best approach for form validation in React applications? Should I use a library like Formik or build custom validation? How do I handle real-time validation and error messages?",
+    "author": {
+      "id": 3,
+      "name": "John Developer",
+      "reputation": 8543,
+      "avatar": "https://www.gravatar.com/avatar/sample2?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 3,
+        "silver": 18,
+        "bronze": 42
+      }
+    },
+    "votes": 54,
+    "views": 3800,
+    "asked": "4 days ago",
+    "modified": "3 days ago",
+    "tags": ["react", "forms", "validation", "formik"]
+  },
+  {
+    "id": 14,
+    "title": "Understanding Python decorators",
+    "content": "I'm trying to understand Python decorators but they seem confusing. Can someone explain what they are, how they work, and provide some practical examples? When should I use them in my code?",
+    "author": {
+      "id": 4,
+      "name": "Sarah Chen",
+      "reputation": 12345,
+      "avatar": "https://www.gravatar.com/avatar/sarah?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 8,
+        "silver": 25,
+        "bronze": 55
+      }
+    },
+    "votes": 87,
+    "views": 7200,
+    "asked": "4 days ago",
+    "modified": "3 days ago",
+    "tags": ["python", "decorators", "functions", "advanced"]
+  },
+  {
+    "id": 15,
+    "title": "How to optimize MongoDB queries?",
+    "content": "My MongoDB queries are slow and I need to optimize them. What are the best practices for MongoDB query optimization? How do I use indexes effectively and what tools can help me analyze query performance?",
+    "author": {
+      "id": 5,
+      "name": "CodeMaster",
+      "reputation": 23456,
+      "avatar": "https://www.gravatar.com/avatar/codemaster?s=64&d=identicon&r=PG",
+      "badges": {
+        "gold": 20,
+        "silver": 60,
+        "bronze": 120
+      }
+    },
+    "votes": 61,
+    "views": 4400,
+    "asked": "5 days ago",
+    "modified": "4 days ago",
+    "tags": ["mongodb", "database", "performance", "optimization"]
+  }
+]

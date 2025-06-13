@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "Max A.",
+    "reputation": 4892,
+    "avatar": "https://www.gravatar.com/avatar/9a6a8a571b7c47685b3ee15cfbd1e3dc?s=64&d=identicon&r=PG",
+    "location": "San Francisco, CA",
+    "badges": {
+      "gold": 6,
+      "silver": 30,
+      "bronze": 29
+    }
+  },
+  {
+    "id": 2,
+    "name": "Bozho",
+    "reputation": 17430,
+    "avatar": "https://www.gravatar.com/avatar/sample1?s=64&d=identicon&r=PG",
+    "location": "Sofia, Bulgaria",
+    "badges": {
+      "gold": 15,
+      "silver": 45,
+      "bronze": 78
+    }
+  },
+  {
+    "id": 3,
+    "name": "John Developer",
+    "reputation": 8543,
+    "avatar": "https://www.gravatar.com/avatar/sample2?s=64&d=identicon&r=PG",
+    "location": "London, UK",
+    "badges": {
+      "gold": 3,
+      "silver": 18,
+      "bronze": 42
+    }
+  },
+  {
+    "id": 4,
+    "name": "Sarah Chen",
+    "reputation": 12345,
+    "avatar": "https://www.gravatar.com/avatar/sarah?s=64&d=identicon&r=PG",
+    "location": "Toronto, Canada",
+    "badges": {
+      "gold": 8,
+      "silver": 25,
+      "bronze": 55
+    }
+  },
+  {
+    "id": 5,
+    "name": "CodeMaster",
+    "reputation": 23456,
+    "avatar": "https://www.gravatar.com/avatar/codemaster?s=64&d=identicon&r=PG",
+    "location": "Seattle, WA",
+    "badges": {
+      "gold": 20,
+      "silver": 60,
+      "bronze": 120
+    }
+  },
+  {
+    "id": 6,
+    "name": "ReactExpert",
+    "reputation": 15678,
+    "avatar": "https://www.gravatar.com/avatar/reactexpert?s=64&d=identicon&r=PG",
+    "location": "Austin, TX",
+    "badges": {
+      "gold": 12,
+      "silver": 35,
+      "bronze": 80
+    }
+  },
+  {
+    "id": 7,
+    "name": "PythonGuru",
+    "reputation": 19876,
+    "avatar": "https://www.gravatar.com/avatar/pythonguru?s=64&d=identicon&r=PG",
+    "location": "New York, NY",
+    "badges": {
+      "gold": 18,
+      "silver": 50,
+      "bronze": 95
+    }
+  },
+  {
+    "id": 8,
+    "name": "JavaNinja",
+    "reputation": 11234,
+    "avatar": "https://www.gravatar.com/avatar/javaninja?s=64&d=identicon&r=PG",
+    "location": "Berlin, Germany",
+    "badges": {
+      "gold": 9,
+      "silver": 28,
+      "bronze": 65
+    }
+  },
+  {
+    "id": 9,
+    "name": "FullStackDev",
+    "reputation": 14567,
+    "avatar": "https://www.gravatar.com/avatar/fullstackdev?s=64&d=identicon&r=PG",
+    "location": "Amsterdam, Netherlands",
+    "badges": {
+      "gold": 11,
+      "silver": 32,
+      "bronze": 75
+    }
+  },
+  {
+    "id": 10,
+    "name": "AIEnthusiast",
+    "reputation": 9876,
+    "avatar": "https://www.gravatar.com/avatar/aienthusiast?s=64&d=identicon&r=PG",
+    "location": "Tokyo, Japan",
+    "badges": {
+      "gold": 7,
+      "silver": 22,
+      "bronze": 48
+    }
+  }
+]
