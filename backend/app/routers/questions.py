@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..db.db import get_db
+from ..db import models as db_models
 from ..data_service import DataService
 from ..models import Question, QuestionSummary, QuestionCreate, QuestionUpdate, MessageResponse, PaginatedResponse
 import math
@@ -36,20 +37,20 @@ async def get_questions(
     else:
         questions_data = data_service.get_questions(skip=skip, limit=limit, sort=sort)
     
-    total = db.query(Question).count()
+    total = db.query(db_models.Question).count()
     
     questions = []
     for q_data in questions_data:
         question = QuestionSummary(
-            id=q_data["id"],
-            title=q_data["title"],
-            content=q_data["content"][:200] + "..." if len(q_data["content"]) > 200 else q_data["content"],
-            author=q_data["author"],
-            tags=q_data["tags"],
-            votes=q_data["votes"],
-            views=q_data["views"],
-            answer_count=q_data.get("answer_count", 0),
-            asked=q_data["asked"]
+            id=q_data.id,
+            title=q_data.title,
+            content=q_data.body[:200] + "..." if len(q_data.body) > 200 else q_data.body,
+            author=q_data.author,
+            tags=[t.name for t in q_data.tags],
+            votes=q_data.votes,
+            views=q_data.views,
+            answer_count=len(q_data.answers),
+            asked=q_data.created_at
         )
         questions.append(question)
     

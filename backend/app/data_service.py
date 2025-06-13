@@ -187,14 +187,15 @@ class DataService:
         """Get trending tags (for demo, return most popular)"""
         return self.get_popular_tags(limit)
     
-    def search_questions(self, query: str, tags: List[str] = None, skip: int = 0, limit: int = 20, sort: str = "relevance") -> tuple[List[Question], int]:
+    def search_questions(self, query: str, tags: List[str] = None, skip: int = 0, limit: int = 20, sort: str = "relevance") -> tuple[List[Dict], int]:
         """Search questions by title or content"""
         search_query = self.db.query(Question).filter(
-            (Question.title.ilike(f"%{query}%")) | (Question.content.ilike(f"%{query}%"))
+            (Question.title.ilike(f"%{query}%")) | (Question.body.ilike(f"%{query}%"))
         )
         
         if tags:
-            search_query = search_query.filter(Question.tags.overlap(tags))
+            # Join with tags table and filter by tag names
+            search_query = search_query.join(Question.tags).filter(Tag.name.in_(tags))
         
         if sort == "relevance":
             # For now, just sort by newest
@@ -207,7 +208,22 @@ class DataService:
         total = search_query.count()
         questions = search_query.offset(skip).limit(limit).all()
         
-        return questions, total
+        # Convert to dictionary format
+        result = []
+        for q in questions:
+            result.append({
+                "id": q.id,
+                "title": q.title,
+                "content": q.body,
+                "author": q.author,
+                "tags": [t.name for t in q.tags],
+                "votes": q.votes,
+                "views": q.views,
+                "answer_count": len(q.answers),
+                "asked": q.created_at
+            })
+        
+        return result, total
     
     def get_user_by_username(self, username: str) -> Optional[User]:
         """Get user by username"""

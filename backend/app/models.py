@@ -1,38 +1,62 @@
 from typing import List, Optional, TypeVar, Generic
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, constr, validator
 from datetime import datetime
+import re
 
 # Authentication models
 class Token(BaseModel):
     access_token: str
     token_type: str
+    expires_in: int
+    refresh_token: Optional[str] = None
 
 class TokenData(BaseModel):
     username: Optional[str] = None
 
 class UserAuth(BaseModel):
-    username: str
+    username: constr(min_length=3, max_length=50)
     email: EmailStr
-    password: str
+    password: constr(min_length=8, max_length=255)
+
+    @validator('password')
+    def password_strength(cls, v):
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('Password must contain at least one special character')
+        return v
 
 class UserLogin(BaseModel):
-    username: str
+    username: constr(min_length=3, max_length=50)
     password: str
 
 # User models
 class UserBadges(BaseModel):
-    gold: int = 0
-    silver: int = 0
-    bronze: int = 0
+    gold: int = Field(default=0, ge=0)
+    silver: int = Field(default=0, ge=0)
+    bronze: int = Field(default=0, ge=0)
 
 class UserBase(BaseModel):
-    name: str
+    name: constr(min_length=3, max_length=50)
     email: EmailStr
-    reputation: int = 0
-    avatar: str = ""
-    location: Optional[str] = None
-    website: Optional[str] = None
+    reputation: int = Field(default=0, ge=0)
+    avatar: str = Field(default="", max_length=255)
+    location: Optional[constr(max_length=100)] = None
+    website: Optional[constr(max_length=255)] = None
     is_active: bool = True
+
+    @validator('website')
+    def validate_website(cls, v):
+        if v and not v.startswith(('http://', 'https://')):
+            return f'https://{v}'
+        return v
+
+    class Config:
+        from_attributes = True
 
 class User(UserBase):
     id: int
@@ -95,7 +119,8 @@ class QuestionSummary(BaseModel):
     id: int
     title: str
     content: str  # Will be truncated
-    author_id: int
+    author: UserBase
+    tags: List[str] = []
     votes: int
     views: int
     asked: datetime

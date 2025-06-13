@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.sessions import SessionMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from .routers import auth, users, questions, answers, tags, search, synthetic
 from .db.db import init_db, drop_db, get_db, populate_database
 import secrets
