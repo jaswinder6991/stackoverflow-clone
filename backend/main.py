@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import questions, users, tags, search, answers, synthetic, auth
 from app.db.db import init_db, get_db, drop_db, populate_database
+from app.db.models import User
 from sqlalchemy.orm import Session
 
 app = FastAPI(
@@ -49,16 +50,27 @@ async def health_check(db: Session = Depends(get_db)):
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
-    # Drop existing tables
-    drop_db()
-    # Create tables with new schema
-    init_db()
-    # Populate with sample data
     db = next(get_db())
     try:
-        populate_database(db)
+        # Try to query the database to see if it has data
+        first_user = db.query(User).first()
+        if first_user is not None:
+            print("Database already has data, skipping population")
+            return
+
+        print("Database is empty, creating tables and populating with sample data...")
+        try:
+            # Create tables (this is safe - only creates if they don't exist)
+            init_db()
+            # Populate with sample data
+            populate_database(db)
+            print("Database initialized successfully!")
+        except Exception as e:
+            print(f"Error during database initialization: {e}")
+            raise
     except Exception as e:
-        print(f"Error populating database: {e}")
+        print(f"Error checking database state: {e}")
+        raise
     finally:
         db.close()
 

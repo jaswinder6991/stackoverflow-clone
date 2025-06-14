@@ -9,10 +9,13 @@ from .base import Base
 from .models import User, Question, Answer, Tag, Vote, Badge, UserBadge, AnalyticsLog
 
 # Create data directory if it doesn't exist
-os.makedirs("data", exist_ok=True)
+data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
+os.makedirs(data_dir, exist_ok=True)
 
 # Database URL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/sql_app.db")
+db_path = os.path.join(data_dir, "sql_app.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
+print(f"Using database at: {db_path}")
 
 # Create engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -38,8 +41,23 @@ def init_db():
     """Initialize the database by creating all tables"""
     Base.metadata.create_all(bind=engine)
 
+def is_database_empty(db):
+    """Check if the database is empty by querying users table"""
+    try:
+        # Try to get the first user
+        first_user = db.query(User).first()
+        return first_user is None
+    except Exception:
+        # If there's an error (like table doesn't exist), consider it empty
+        return True
+
 def populate_database(db):
-    """Populate the database with mock data"""
+    """Populate the database with mock data only if it's empty"""
+    if not is_database_empty(db):
+        print("Database already has data, skipping population")
+        return
+
+    print("Database is empty, populating with sample data...")
     # Add sample users
     users = [
         User(
@@ -121,4 +139,5 @@ def populate_database(db):
     db.add_all(user_badges)
     
     # Commit all changes
-    db.commit() 
+    db.commit()
+    print("Database populated successfully!") 

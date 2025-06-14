@@ -40,11 +40,16 @@ class ApiService {
         credentials: 'include',
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Pass through the error details from the backend
+        throw new Error(JSON.stringify({
+          status: response.status,
+          detail: data.detail
+        }));
       }
 
-      const data = await response.json();
       return { data };
     } catch (error) {
       console.error('API request failed:', error);
@@ -104,6 +109,9 @@ class ApiService {
   async register(userData: { username: string; email: string; password: string }) {
     return this.request('/auth/register', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(userData),
     });
   }

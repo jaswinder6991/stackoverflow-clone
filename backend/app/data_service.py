@@ -14,40 +14,6 @@ from .models import QuestionCreate, AnswerCreate, TagCreate, UserCreate
 class DataService:
     def __init__(self, db: Session):
         self.db = db
-        self.data_dir = "data"
-        self.users: List[Dict] = []
-        self.questions: List[Dict] = []
-        self.answers: List[Dict] = []
-        self.tags: List[Dict] = []
-        self._load_data()
-    
-    def _load_data(self):
-        """Load all JSON data files into memory"""
-        try:
-            # Load users
-            with open(os.path.join(self.data_dir, "users.json"), "r") as f:
-                self.users = json.load(f)
-            
-            # Load questions  
-            with open(os.path.join(self.data_dir, "questions.json"), "r") as f:
-                self.questions = json.load(f)
-            
-            # Load answers
-            with open(os.path.join(self.data_dir, "answers.json"), "r") as f:
-                self.answers = json.load(f)
-                
-            # Load tags
-            with open(os.path.join(self.data_dir, "tags.json"), "r") as f:
-                self.tags = json.load(f)
-                
-            print(f"Loaded {len(self.users)} users, {len(self.questions)} questions, {len(self.answers)} answers, {len(self.tags)} tags")
-            
-        except FileNotFoundError as e:
-            print(f"Data file not found: {e}")
-            self.users = []
-            self.questions = []
-            self.answers = []
-            self.tags = []
     
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID"""
@@ -227,7 +193,12 @@ class DataService:
     
     def get_user_by_username(self, username: str) -> Optional[User]:
         """Get user by username"""
-        return self.db.query(User).filter(User.name == username).first()
+        print(f"Searching for user with username: {username}")
+        user = self.db.query(User).filter(User.name == username).first()
+        print(f"User found: {user is not None}")
+        if user:
+            print(f"User details - ID: {user.id}, Name: {user.name}, Email: {user.email}")
+        return user
     
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
@@ -240,7 +211,11 @@ class DataService:
             email=email,
             hashed_password=hashed_password,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
+            reputation=0,
+            is_active=True,
+            is_deleted=False,
+            last_seen=datetime.utcnow()
         )
         self.db.add(user)
         self.db.commit()
@@ -323,6 +298,10 @@ class DataService:
             "total_users": self.db.query(User).count(),
             "total_tags": self.db.query(Tag).count()
         }
+
+    def get_all_users(self) -> List[User]:
+        """Get all users from the database"""
+        return self.db.query(User).all()
 
     def update_question(self, question_id: int, question: QuestionCreate) -> Optional[Question]:
         db_question = self.get_question(question_id)

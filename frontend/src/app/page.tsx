@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
 import apiService from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -32,6 +34,22 @@ export default function HomePage() {
     <Layout>
       {/* Main Content */}
       <div>
+        {/* Login prompt */}
+    {!user && (
+      <div className="border border-yellow-300 bg-yellow-50 text-yellow-800 p-4 rounded mb-6">
+        <p>
+          Please{' '}
+          <Link href="/auth/login" className="text-blue-600 underline">
+            log in
+          </Link>{' '}
+          or{' '}
+          <Link href="/auth/register" className="text-blue-600 underline">
+            register
+          </Link>{' '}
+          to ask questions and interact.
+        </p>
+      </div>
+    )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Top Questions</h1>
           <Link href="/questions/ask">
@@ -95,7 +113,7 @@ export default function HomePage() {
       {/* Right Sidebar (Stack Overflow style) */}
       <aside className="hidden lg:block w-80 ml-8 flex-shrink-0">
         {/* Watched Tags */}
-        <div className="bg-white border border-gray-200 rounded-lg mb-6 p-4">
+        {/* <div className="bg-white border border-gray-200 rounded-lg mb-6 p-4">
           <h3 className="text-md font-semibold mb-2">Watched Tags</h3>
           <div className="flex flex-wrap gap-2">
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">react</span>
@@ -104,9 +122,9 @@ export default function HomePage() {
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">next.js</span>
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">sql</span>
           </div>
-        </div>
+        </div> */}
         {/* Collectives */}
-        <div className="bg-white border border-gray-200 rounded-lg mb-6 p-4">
+        {/* <div className="bg-white border border-gray-200 rounded-lg mb-6 p-4">
           <h3 className="text-md font-semibold mb-2">Collectives</h3>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
@@ -122,16 +140,16 @@ export default function HomePage() {
               <span className="font-medium text-sm">Microsoft Azure</span>
             </div>
           </div>
-        </div>
+        </div> */}
         {/* Featured on Meta */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        {/* <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h3 className="text-md font-semibold mb-2">Featured on Meta</h3>
           <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
             <li>Update: New search experience powered by AI</li>
             <li>Temporary policy: Generative AI (e.g., ChatGPT) is banned</li>
             <li>2024 Moderator Election Q&A</li>
           </ul>
-        </div>
+        </div> */}
       </aside>
     </Layout>
   );

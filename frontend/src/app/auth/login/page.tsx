@@ -21,8 +21,24 @@ export default function LoginPage() {
       analyticsLogger.logCustomAction('LOGIN_SUCCESS', { username });
       router.push('/');
     } catch (err) {
-      setError('Login failed. Please check your credentials and try again.');
-      analyticsLogger.logCustomAction('LOGIN_FAILURE', { username, error: err instanceof Error ? err.message : 'Unknown error' });
+      if (err instanceof Error) {
+        try {
+          const errorData = JSON.parse(err.message);
+          if (errorData.detail && errorData.detail.message) {
+            setError(errorData.detail.message);
+          } else {
+            setError('Login failed. Please check your credentials and try again.');
+          }
+        } catch {
+          setError('Login failed. Please check your credentials and try again.');
+        }
+      } else {
+        setError('Login failed. Please check your credentials and try again.');
+      }
+      analyticsLogger.logCustomAction('LOGIN_FAILURE', { 
+        username, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      });
     }
   };
 
