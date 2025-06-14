@@ -48,7 +48,7 @@ async def create_answer(
     return data_service.create_answer(
         question_id=answer.question_id,
         user_id=answer.user_id,
-        content=answer.content
+        content=answer.body
     )
 
 @router.put("/{answer_id}", response_model=Answer)

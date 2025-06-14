@@ -1,5 +1,5 @@
-from typing import List, Optional, TypeVar, Generic
-from pydantic import BaseModel, Field, EmailStr, constr, validator
+from typing import List, Optional, TypeVar, Generic, Annotated
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from datetime import datetime
 import re
 
@@ -14,11 +14,12 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 class UserAuth(BaseModel):
-    username: constr(min_length=3, max_length=50)
+    username: Annotated[str, Field(min_length=3, max_length=50)]
     email: EmailStr
-    password: constr(min_length=8, max_length=255)
+    password: Annotated[str, Field(min_length=8, max_length=255)]
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def password_strength(cls, v):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least one uppercase letter')
@@ -31,7 +32,7 @@ class UserAuth(BaseModel):
         return v
 
 class UserLogin(BaseModel):
-    username: constr(min_length=3, max_length=50)
+    username: Annotated[str, Field(min_length=3, max_length=50)]
     password: str
 
 # User models
@@ -41,15 +42,16 @@ class UserBadges(BaseModel):
     bronze: int = Field(default=0, ge=0)
 
 class UserBase(BaseModel):
-    name: constr(min_length=3, max_length=50)
+    name: Annotated[str, Field(min_length=3, max_length=50)]
     email: EmailStr
     reputation: int = Field(default=0, ge=0)
     avatar: str = Field(default="", max_length=255)
-    location: Optional[constr(max_length=100)] = None
-    website: Optional[constr(max_length=255)] = None
+    location: Optional[Annotated[str, Field(max_length=100)]] = None
+    website: Optional[Annotated[str, Field(max_length=255)]] = None
     is_active: bool = True
 
-    @validator('website')
+    @field_validator('website')
+    @classmethod
     def validate_website(cls, v):
         if v and not v.startswith(('http://', 'https://')):
             return f'https://{v}'
@@ -64,9 +66,6 @@ class User(UserBase):
     updated_at: datetime
     is_active: bool = True
 
-    class Config:
-        from_attributes = True
-
 class UserCreate(UserBase):
     password: str
 
@@ -80,7 +79,8 @@ class AnswerBase(BaseModel):
     body: str
 
 class AnswerCreate(AnswerBase):
-    pass
+    question_id: int
+    user_id: int
 
 class AnswerUpdate(AnswerBase):
     pass
@@ -89,8 +89,11 @@ class Answer(AnswerBase):
     id: int
     question_id: int
     author_id: int
-    answered: datetime
-
+    created_at: datetime
+    updated_at: datetime
+    votes: int = 0
+    is_accepted: bool = False
+    
     class Config:
         from_attributes = True
 
@@ -100,7 +103,8 @@ class QuestionBase(BaseModel):
     body: str
 
 class QuestionCreate(QuestionBase):
-    pass
+    author_id: int
+    tags: Optional[List[str]] = []
 
 class QuestionUpdate(QuestionBase):
     pass
@@ -108,8 +112,11 @@ class QuestionUpdate(QuestionBase):
 class Question(QuestionBase):
     id: int
     author_id: int
-    asked: datetime
-    modified: datetime
+    created_at: datetime
+    updated_at: datetime
+    votes: int = 0
+    views: int = 0
+    is_answered: bool = False
 
     class Config:
         from_attributes = True

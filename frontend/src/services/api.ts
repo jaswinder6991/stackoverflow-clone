@@ -9,6 +9,18 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+interface BackendQuestion {
+  id: number;
+  title: string;
+  body: string;
+  author_id: number;
+  created_at: string;
+  updated_at: string;
+  votes: number;
+  views: number;
+  is_answered: boolean;
+}
+
 class ApiService {
   private static instance: ApiService;
   private baseUrl: string;
@@ -63,19 +75,27 @@ class ApiService {
   }
 
   async getQuestion(id: number) {
-    return this.request(`/questions/${id}`);
+    return this.request<BackendQuestion>(`/questions/${id}`);
   }
 
-  async createQuestion(data: { title: string; content: string; tags: string[] }) {
+  async createQuestion(data: { title: string; body: string; tags: string[]; author_id: number }) {
+    // Data is already in the format expected by the backend
+    const backendData = {
+      title: data.title,
+      body: data.body,
+      author_id: data.author_id,
+      tags: data.tags
+    };
+
     return this.request('/questions', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(backendData),
     });
   }
 
   // Tags
   async getTags() {
-    return this.request('/tags');
+    return this.request('/api/tags');
   }
 
   async getTag(name: string) {
@@ -127,10 +147,41 @@ class ApiService {
     return this.request(`/search?q=${encodeURIComponent(query)}`);
   }
 
+  // Answers
+  async createAnswer(data: { question_id: number; user_id: number; body: string }) {
+    return this.request('/answers/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Voting
+  async voteQuestion(questionId: number, userId: number, voteType: 'up' | 'down', isUndo: boolean = false) {
+    // If this is undoing a vote, we use the opposite vote type to cancel it out
+    const effectiveVoteType = isUndo 
+      ? (voteType === 'up' ? 'down' : 'up') 
+      : voteType;
+      
+    return this.request(`/questions/${questionId}/vote?user_id=${userId}&vote_type=${effectiveVoteType}`, {
+      method: 'POST',
+    });
+  }
+
+  async voteAnswer(answerId: number, userId: number, voteType: 'up' | 'down', isUndo: boolean = false) {
+    // If this is undoing a vote, we use the opposite vote type to cancel it out
+    const effectiveVoteType = isUndo 
+      ? (voteType === 'up' ? 'down' : 'up') 
+      : voteType;
+      
+    return this.request(`/answers/${answerId}/vote?user_id=${userId}&vote_type=${effectiveVoteType}`, {
+      method: 'POST',
+    });
+  }
+
   async getCurrentUser() {
     return this.request('/auth/me');
   }
 }
 
 const apiService = ApiService.getInstance();
-export default apiService; 
+export default apiService;

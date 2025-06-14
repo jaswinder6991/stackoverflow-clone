@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router)
+# app.include_router(auth.router)
 app.include_router(questions.router)
 app.include_router(answers.router)
 app.include_router(users.router)
@@ -42,7 +42,8 @@ async def health_check(db: Session = Depends(get_db)):
     """Health check endpoint that verifies database connectivity"""
     try:
         # Try to make a simple database query
-        db.execute("SELECT 1")
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
@@ -52,16 +53,17 @@ async def startup_event():
     """Initialize database on startup"""
     db = next(get_db())
     try:
+        # Create tables first (this is safe - only creates if they don't exist)
+        init_db()
+        
         # Try to query the database to see if it has data
         first_user = db.query(User).first()
         if first_user is not None:
             print("Database already has data, skipping population")
             return
 
-        print("Database is empty, creating tables and populating with sample data...")
+        print("Database is empty, populating with sample data...")
         try:
-            # Create tables (this is safe - only creates if they don't exist)
-            init_db()
             # Populate with sample data
             populate_database(db)
             print("Database initialized successfully!")
@@ -70,7 +72,14 @@ async def startup_event():
             raise
     except Exception as e:
         print(f"Error checking database state: {e}")
-        raise
+        # If there's an error checking database state, try to initialize
+        try:
+            init_db()
+            populate_database(db)
+            print("Database initialized after error!")
+        except Exception as init_error:
+            print(f"Failed to initialize database: {init_error}")
+            raise
     finally:
         db.close()
 
