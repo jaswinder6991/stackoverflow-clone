@@ -40,6 +40,29 @@ class UserBadges(BaseModel):
     silver: int = Field(default=0, ge=0)
     bronze: int = Field(default=0, ge=0)
 
+class UserProfile(BaseModel):
+    basic: Optional[dict] = Field(default_factory=lambda: {
+        "displayName": "",
+        "location": "",
+        "title": "",
+        "pronouns": "",
+    })
+    about: Optional[dict] = Field(default_factory=lambda: {
+        "bio": "",
+        "interests": "",
+    })
+    developer: Optional[dict] = Field(default_factory=lambda: {
+        "primaryLanguage": "",
+        "technologies": "",
+        "yearsOfExperience": "",
+        "githubProfile": "",
+    })
+    links: Optional[dict] = Field(default_factory=lambda: {
+        "website": "",
+        "twitter": "",
+        "github": "",
+    })
+
 class UserBase(BaseModel):
     name: constr(min_length=3, max_length=50)
     email: EmailStr
@@ -48,6 +71,7 @@ class UserBase(BaseModel):
     location: Optional[constr(max_length=100)] = None
     website: Optional[constr(max_length=255)] = None
     is_active: bool = True
+    profile: Optional[UserProfile] = None
 
     @validator('website')
     def validate_website(cls, v):

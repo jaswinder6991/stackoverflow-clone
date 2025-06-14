@@ -2,6 +2,7 @@ import React from 'react';
 import TopBar from './TopBar';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
+import TopNav from './TopNav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,11 +12,10 @@ interface LayoutProps {
 const Layout = ({ children, showSidebars = true }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
-      <TopBar />
+      <TopNav />
       
       {/* Main Container */}
-      <div className="pt-12">
+      <div className="pt-2">
         <div className="container mx-auto max-w-[1264px]">
           <div className="flex">
             {/* Left Sidebar */}

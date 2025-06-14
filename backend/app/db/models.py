@@ -22,6 +22,31 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False)
     
+    # Profile fields
+    profile = Column(JSON, nullable=True, default={
+        "basic": {
+            "displayName": "",
+            "location": "",
+            "title": "",
+            "pronouns": "",
+        },
+        "about": {
+            "bio": "",
+            "interests": "",
+        },
+        "developer": {
+            "primaryLanguage": "",
+            "technologies": "",
+            "yearsOfExperience": "",
+            "githubProfile": "",
+        },
+        "links": {
+            "website": "",
+            "twitter": "",
+            "github": "",
+        }
+    })
+    
     # Relationships
     questions = relationship("Question", back_populates="author", cascade="all, delete-orphan")
     answers = relationship("Answer", back_populates="author", cascade="all, delete-orphan")

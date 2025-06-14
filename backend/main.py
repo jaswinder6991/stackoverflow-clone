@@ -18,6 +18,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # Include routers
@@ -52,24 +53,26 @@ async def startup_event():
     """Initialize database on startup"""
     db = next(get_db())
     try:
-        # Try to query the database to see if it has data
+        print("Ensuring database tables exist...")
+        # Create tables first (this is safe - only creates if they don't exist)
+        init_db()
+
+        # Now it's safe to query since tables exist
         first_user = db.query(User).first()
         if first_user is not None:
             print("Database already has data, skipping population")
             return
 
-        print("Database is empty, creating tables and populating with sample data...")
+        print("Database is empty, populating with sample data...")
         try:
-            # Create tables (this is safe - only creates if they don't exist)
-            init_db()
             # Populate with sample data
             populate_database(db)
             print("Database initialized successfully!")
         except Exception as e:
-            print(f"Error during database initialization: {e}")
+            print(f"Error during database population: {e}")
             raise
     except Exception as e:
-        print(f"Error checking database state: {e}")
+        print(f"Error during database initialization: {e}")
         raise
     finally:
         db.close()

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from ..db.db import get_db
 from ..data_service import DataService
-from ..models import User, PaginatedResponse, UserCreate, UserUpdate, UserStats
+from ..models import User, PaginatedResponse, UserCreate, UserUpdate, UserStats, UserProfile
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -22,7 +22,7 @@ async def get_user(
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
-    user = data_service.get_user(user_id)
+    user = data_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -37,7 +37,7 @@ async def get_user_questions(
     """Get questions posted by a specific user"""
     data_service = DataService(db)
     # Check if user exists
-    user = data_service.get_user(user_id)
+    user = data_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -54,7 +54,7 @@ async def get_user_answers(
     """Get answers posted by a specific user"""
     data_service = DataService(db)
     # Check if user exists
-    user = data_service.get_user(user_id)
+    user = data_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -91,7 +91,7 @@ async def update_user(
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
-    user = data_service.get_user(user_id)
+    user = data_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -103,13 +103,32 @@ async def update_user(
     db.refresh(user)
     return user
 
+@router.put("/{user_id}/profile", response_model=User)
+async def update_user_profile(
+    user_id: int,
+    profile: UserProfile,
+    db: Session = Depends(get_db)
+):
+    """Update a user's profile information"""
+    data_service = DataService(db)
+    user = data_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Convert UserProfile to dict before saving
+    user.profile = profile.dict()
+    
+    db.commit()
+    db.refresh(user)
+    return user
+
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
-    user = data_service.get_user(user_id)
+    user = data_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
