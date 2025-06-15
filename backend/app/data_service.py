@@ -589,7 +589,7 @@ class DataService:
         """Create a new comment on a question or answer"""
         from .db.models import Comment as DBComment
         
-        # Validate that comment is either on question or answer, not both
+        # Validate that comment is either on question or an answer, not both
         if (question_id is None and answer_id is None) or (question_id is not None and answer_id is not None):
             raise ValueError("Comment must be on either a question or an answer, not both or neither")
             
@@ -679,3 +679,57 @@ class DataService:
         ).first()
         
         return vote is not None
+    
+    def remove_question_vote(self, question_id: int, user_id: int, vote_type: str):
+        """Remove a user's vote from a question"""
+        question = self.get_question(question_id)
+        if not question:
+            raise ValueError("Question not found")
+            
+        # Find the existing vote
+        existing_vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.question_id == question_id,
+            Vote.vote_type == vote_type
+        ).first()
+        
+        if not existing_vote:
+            # User doesn't have this type of vote on this question, so nothing to remove
+            return
+            
+        # Remove the vote effect from the question
+        vote_delta = -1 if vote_type == "up" else 1  # Opposite of the original vote
+        self.db.query(DBQuestion).filter(DBQuestion.id == question_id).update({
+            DBQuestion.votes: DBQuestion.votes + vote_delta
+        })
+        
+        # Delete the vote record
+        self.db.delete(existing_vote)
+        self.db.commit()
+
+    def remove_answer_vote(self, answer_id: int, user_id: int, vote_type: str):
+        """Remove a user's vote from an answer"""
+        answer = self.get_answer(answer_id)
+        if not answer:
+            raise ValueError("Answer not found")
+            
+        # Find the existing vote
+        existing_vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.answer_id == answer_id,
+            Vote.vote_type == vote_type
+        ).first()
+        
+        if not existing_vote:
+            # User doesn't have this type of vote on this answer, so nothing to remove
+            return
+            
+        # Remove the vote effect from the answer
+        vote_delta = -1 if vote_type == "up" else 1  # Opposite of the original vote
+        self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).update({
+            DBAnswer.votes: DBAnswer.votes + vote_delta
+        })
+        
+        # Delete the vote record
+        self.db.delete(existing_vote)
+        self.db.commit()

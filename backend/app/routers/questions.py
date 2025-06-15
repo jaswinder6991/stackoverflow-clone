@@ -228,6 +228,7 @@ async def vote_question(
     question_id: int,
     user_id: int,
     vote_type: str = Query(..., description="Vote type: up or down"),
+    undo: bool = Query(False, description="Remove the vote instead of adding it"),
     db: Session = Depends(get_db)
 ):
     """Vote on a question"""
@@ -241,8 +242,12 @@ async def vote_question(
     if vote_type not in ["up", "down"]:
         raise HTTPException(status_code=400, detail="Invalid vote type")
     
-    data_service.vote_question(question_id, user_id, vote_type)
-    return {"message": "Vote recorded successfully"}
+    if undo:
+        data_service.remove_question_vote(question_id, user_id, vote_type)
+        return {"message": "Vote removed successfully"}
+    else:
+        data_service.vote_question(question_id, user_id, vote_type)
+        return {"message": "Vote recorded successfully"}
 
 @router.get("/tagged/{tag}", response_model=List[QuestionSummary])
 async def get_questions_tagged(

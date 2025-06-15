@@ -207,23 +207,15 @@ class ApiService {
 
   // Voting
   async voteQuestion(questionId: number, userId: number, voteType: 'up' | 'down', isUndo: boolean = false) {
-    // If this is undoing a vote, we use the opposite vote type to cancel it out
-    const effectiveVoteType = isUndo 
-      ? (voteType === 'up' ? 'down' : 'up') 
-      : voteType;
-      
-    return this.request(`/questions/${questionId}/vote?user_id=${userId}&vote_type=${effectiveVoteType}`, {
+    const undoParam = isUndo ? '&undo=true' : '';
+    return this.request(`/questions/${questionId}/vote?user_id=${userId}&vote_type=${voteType}${undoParam}`, {
       method: 'POST',
     });
   }
 
   async voteAnswer(answerId: number, userId: number, voteType: 'up' | 'down', isUndo: boolean = false) {
-    // If this is undoing a vote, we use the opposite vote type to cancel it out
-    const effectiveVoteType = isUndo 
-      ? (voteType === 'up' ? 'down' : 'up') 
-      : voteType;
-      
-    return this.request(`/answers/${answerId}/vote?user_id=${userId}&vote_type=${effectiveVoteType}`, {
+    const undoParam = isUndo ? '&undo=true' : '';
+    return this.request(`/answers/${answerId}/vote?user_id=${userId}&vote_type=${voteType}${undoParam}`, {
       method: 'POST',
     });
   }
