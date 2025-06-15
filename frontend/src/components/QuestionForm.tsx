@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import apiService from '../services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function QuestionForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -74,6 +76,12 @@ export default function QuestionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      setError('You must be logged in to post a question');
+      router.push('/auth/login');
+      return;
+    }
+
     if (!title.trim()) {
       setError('Please provide a title for your question');
       return;
@@ -93,15 +101,11 @@ export default function QuestionForm() {
     setError(null);
 
     try {
-      // For now, using a dummy user_id since auth is commented out
-      // In a real implementation, this would come from the auth context
-      const dummyUserId = 1;
-      
       const questionData = {
         title: title,
-        body: body,  // Now our API expects body directly
+        body: body,
         tags: tags,
-        author_id: dummyUserId
+        author_id: user.id
       };
       
       console.log('Submitting question:', questionData);

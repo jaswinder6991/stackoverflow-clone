@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { analyticsLogger } from '@/services/analyticsLogger';
+import { logEvent, ActionType } from '@/services/analyticsLogger';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -58,7 +58,13 @@ export default function RegisterPage() {
 
     try {
       await register(username, email, password);
-      analyticsLogger.logCustomAction('REGISTER_SUCCESS', { username, email });
+      // Log successful registration
+      logEvent('register-session', ActionType.CLICK, {
+        text: 'User registered successfully',
+        page_url: window.location.href,
+        element_identifier: 'register-submit-btn',
+        coordinates: { x: 0, y: 0 }
+      });
       router.push('/');
     } catch (err) {
       // Handle the error response from the backend
@@ -85,10 +91,12 @@ export default function RegisterPage() {
       } else {
         setError('Registration failed. Please try again.');
       }
-      analyticsLogger.logCustomAction('REGISTER_FAILURE', { 
-        username, 
-        email, 
-        error: err instanceof Error ? err.message : 'Unknown error' 
+      // Log failed registration
+      logEvent('register-session', ActionType.CLICK, {
+        text: 'Registration attempt failed',
+        page_url: window.location.href,
+        element_identifier: 'register-submit-btn',
+        coordinates: { x: 0, y: 0 }
       });
     }
   };
@@ -188,6 +196,7 @@ export default function RegisterPage() {
           <div>
             <button
               type="submit"
+              id="register-submit-btn"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Register

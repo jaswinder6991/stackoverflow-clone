@@ -68,7 +68,30 @@ def populate_database(db):
             location="San Francisco, CA",
             website="https://johndoe.com",
             about="Full-stack developer passionate about Python and JavaScript",
-            last_seen=datetime.utcnow()
+            last_seen=datetime.utcnow(),
+            profile={
+                "basic": {
+                    "displayName": "John Doe",
+                    "location": "San Francisco, CA",
+                    "title": "Senior Full Stack Developer",
+                    "pronouns": "he/him",
+                },
+                "about": {
+                    "bio": "Full-stack developer passionate about Python and JavaScript. I love building scalable web applications and contributing to open source projects.",
+                    "interests": "Web Development, Cloud Computing, Open Source",
+                },
+                "developer": {
+                    "primaryLanguage": "Python",
+                    "technologies": "Python, JavaScript, React, Docker, AWS",
+                    "yearsOfExperience": "8",
+                    "githubProfile": "johndoe",
+                },
+                "links": {
+                    "website": "https://johndoe.com",
+                    "twitter": "@johndoe",
+                    "github": "johndoe",
+                }
+            }
         ),
         User(
             name="jane_smith",
@@ -78,7 +101,30 @@ def populate_database(db):
             location="New York, NY",
             website="https://janesmith.dev",
             about="Senior software engineer specializing in React and TypeScript",
-            last_seen=datetime.utcnow()
+            last_seen=datetime.utcnow(),
+            profile={
+                "basic": {
+                    "displayName": "Jane Smith",
+                    "location": "New York, NY",
+                    "title": "Senior Frontend Engineer",
+                    "pronouns": "she/her",
+                },
+                "about": {
+                    "bio": "Senior software engineer specializing in React and TypeScript. Currently focused on building performant and accessible web applications.",
+                    "interests": "Frontend Development, UI/UX, Accessibility",
+                },
+                "developer": {
+                    "primaryLanguage": "TypeScript",
+                    "technologies": "React, TypeScript, Next.js, GraphQL",
+                    "yearsOfExperience": "6",
+                    "githubProfile": "janesmith",
+                },
+                "links": {
+                    "website": "https://janesmith.dev",
+                    "twitter": "@janesmith",
+                    "github": "janesmith",
+                }
+            }
         ),
     ]
     db.add_all(users)

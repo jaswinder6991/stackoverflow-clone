@@ -1,4 +1,5 @@
 import QuestionDetail from "@/components/QuestionDetail";
+import Layout from "@/components/Layout";
 
 interface QuestionPageProps {
   params: Promise<{
@@ -12,8 +13,10 @@ export default async function QuestionDetailPage({ params }: QuestionPageProps) 
   // Note: slug parameter is available for SEO but not used in this implementation
   
   return (
+    <Layout>
     <div className="bg-white min-h-screen">
       <QuestionDetail questionId={parseInt(id)} />
     </div>
+    </Layout>
   );
 }

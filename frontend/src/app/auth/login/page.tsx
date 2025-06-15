@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { analyticsLogger } from '@/services/analyticsLogger';
+import { logEvent, ActionType } from '@/services/analyticsLogger';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -18,7 +18,13 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      analyticsLogger.logCustomAction('LOGIN_SUCCESS', { username });
+      // Log successful login
+      logEvent('login-session', ActionType.CLICK, {
+        text: 'User logged in successfully',
+        page_url: window.location.href,
+        element_identifier: 'login-submit-btn',
+        coordinates: { x: 0, y: 0 }
+      });
       router.push('/');
     } catch (err) {
       if (err instanceof Error) {
@@ -35,9 +41,12 @@ export default function LoginPage() {
       } else {
         setError('Login failed. Please check your credentials and try again.');
       }
-      analyticsLogger.logCustomAction('LOGIN_FAILURE', { 
-        username, 
-        error: err instanceof Error ? err.message : 'Unknown error' 
+      // Log failed login
+      logEvent('login-session', ActionType.CLICK, {
+        text: 'Login attempt failed',
+        page_url: window.location.href,
+        element_identifier: 'login-submit-btn',
+        coordinates: { x: 0, y: 0 }
       });
     }
   };
@@ -91,6 +100,7 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
+              id="login-submit-btn"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Sign in
