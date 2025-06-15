@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowUp, MessageSquarePlus } from 'lucide-react';
+import { MessageSquarePlus } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Comment {
@@ -31,40 +31,61 @@ function CommentItem({ comment, onVote, userVoteStatuses, votingStates }: Commen
   const isVoting = votingStates[comment.id] || false;
 
   return (
-    <div className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-b-0">
-      {/* Comment content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start space-x-2">
-          <div className="flex-1">
-            <span className="text-sm text-gray-700 mr-2">{comment.body}</span>
-            <span className="text-xs text-gray-500 mr-1">–</span>
-            <span className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer mr-2">
-              User {comment.author_id}
-            </span>
-            <span className="text-xs text-gray-500">
-              {new Date(comment.created_at).toLocaleDateString()}
+    <li className="flex items-start space-x-3 py-3 border-b border-gray-100 last:border-b-0">
+      {/* Comment actions - Vote section (horizontal layout like Stack Overflow) */}
+      <div className="flex items-center space-x-2">
+        {/* Vote score */}
+        {comment.votes > 0 && (
+          <div className="comment-score">
+            <span 
+              className={`text-xs font-medium ${
+                comment.votes >= 10 ? 'text-orange-600' : 'text-gray-600'
+              }`} 
+              title="number of 'useful comment' votes received"
+            >
+              {comment.votes}
             </span>
           </div>
+        )}
+        
+        {/* Upvote button */}
+        <div className="comment-voting">
+          <button
+            onClick={() => onVote(comment.id)}
+            disabled={isVoting}
+            className={`p-1 transition-colors ${
+              hasVoted 
+                ? 'text-orange-600' 
+                : 'text-gray-400 hover:text-gray-600'
+            } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title="This comment adds something useful to the post"
+            aria-label="Upvote Comment"
+          >
+            {/* Stack Overflow's exact arrow SVG */}
+            <svg aria-hidden="true" className="w-[18px] h-[18px]" width="18" height="18" viewBox="0 0 18 18">
+              <path fill="currentColor" d="M1 12h16L9 4z"/>
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Vote button */}
-      <div className="flex items-center space-x-1">
-        <button
-          onClick={() => onVote(comment.id)}
-          disabled={isVoting}
-          className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
-            hasVoted 
-              ? 'bg-orange-100 text-orange-700 border border-orange-200' 
-              : 'hover:bg-gray-100 text-gray-600 border border-transparent'
-          } ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title="This comment adds something useful to the post"
-        >
-          <ArrowUp className="w-3 h-3" />
-          {comment.votes > 0 && <span className="font-medium">{comment.votes}</span>}
-        </button>
+      {/* Comment content - Right side */}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm text-gray-700">
+          <span className="comment-copy">{comment.body}</span>
+          {' '}
+          <span className="text-gray-500">–</span>
+          {' '}
+          <a href="#" className="text-blue-600 hover:text-blue-800 no-underline">
+            User {comment.author_id}
+          </a>
+          {' '}
+          <span className="text-xs text-gray-500">
+            {new Date(comment.created_at).toLocaleDateString()}
+          </span>
+        </div>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -167,7 +188,8 @@ export default function CommentSection({ questionId, answerId, comments, onComme
             <h3 className="text-sm font-medium text-gray-700 mb-3">
               {comments.length} Comment{comments.length !== 1 ? 's' : ''}
             </h3>
-            <div className="space-y-0">
+            {/* Use ul like Stack Overflow */}
+            <ul className="list-none p-0 m-0">
               {comments.map((comment) => (
                 <CommentItem
                   key={comment.id}
@@ -177,7 +199,7 @@ export default function CommentSection({ questionId, answerId, comments, onComme
                   votingStates={votingStates}
                 />
               ))}
-            </div>
+            </ul>
           </div>
         </div>
       )}
