@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Question } from "@/lib/sampleData";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface TabProps {
   label: string;
@@ -12,52 +13,65 @@ interface TabProps {
   onClick: () => void;
 }
 
-const Tab = ({ label, isActive, onClick }: TabProps) => (
-  <button
-    onClick={onClick}
-    className={`px-4 py-2 ${
-      isActive
-        ? "border-b-2 border-orange-500 text-black"
-        : "text-gray-600 hover:text-black"
-    }`}
-  >
-    {label}
-  </button>
-);
+const Tab = ({ label, isActive, onClick }: TabProps) => {
+  const { handleClick } = useAnalytics();
+  
+  return (
+    <button
+      onClick={(e) => {
+        onClick();
+        handleClick('user-profile-tab', `User clicked on ${label} tab`, e);
+      }}
+      className={`px-4 py-2 ${
+        isActive
+          ? "border-b-2 border-orange-500 text-black"
+          : "text-gray-600 hover:text-black"
+      }`}
+    >
+      {label}
+    </button>
+  );
+};
 
-const QuestionCard = ({ question }: { question: Question }) => (
-  <div className="border-b border-gray-200 py-4 last:border-b-0">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <Link 
-          href={`/questions/${question.id}`}
-          className="text-lg font-medium text-blue-600 hover:text-blue-800 block mb-2"
-        >
-          {question.title}
-        </Link>
-        <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-          {question.content}
-        </p>
-        <div className="flex items-center space-x-4 text-sm text-gray-500">
-          <span>{question.votes} votes</span>
-          <span>{question.answers.length} answers</span>
-          <span>{question.views} views</span>
-          <span>asked {question.asked}</span>
+const QuestionCard = ({ question }: { question: Question }) => {
+  const { handleClick } = useAnalytics();
+  
+  return (
+    <div className="border-b border-gray-200 py-4 last:border-b-0">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <Link 
+            href={`/questions/${question.id}`}
+            className="text-lg font-medium text-blue-600 hover:text-blue-800 block mb-2"
+            onClick={(e) => handleClick('user-question-link', `User clicked on question: "${question.title}" from profile`, e)}
+          >
+            {question.title}
+          </Link>
+          <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+            {question.content}
+          </p>
+          <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <span>{question.votes} votes</span>
+            <span>{question.answers.length} answers</span>
+            <span>{question.views} views</span>
+            <span>asked {question.asked}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 ml-4">
+          {question.tags.map((tag) => (
+            <span
+              key={tag}
+              className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs whitespace-nowrap cursor-pointer hover:bg-blue-200"
+              onClick={(e) => handleClick('user-profile-question-tag', `User clicked on tag "${tag}" from user profile question`, e)}
+            >
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 ml-4">
-        {question.tags.map((tag) => (
-          <span
-            key={tag}
-            className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs whitespace-nowrap"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -66,6 +80,7 @@ export default function UserProfile() {
   const [userQuestions, setUserQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { handleClick } = useAnalytics();
 
   useEffect(() => {
     const fetchUserQuestions = async () => {
@@ -121,6 +136,7 @@ export default function UserProfile() {
             <Link 
               href="/users/edit"
               className="px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={(e) => handleClick('edit-profile-button', 'User clicked Edit profile button', e)}
             >
               Edit profile
             </Link>
@@ -132,17 +148,12 @@ export default function UserProfile() {
       <div className="border-b border-gray-200 mb-6">
         <div className="flex gap-4">
           {tabs.map((tab) => (
-            <button
+            <Tab
               key={tab}
+              label={tab}
+              isActive={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 ${
-                activeTab === tab
-                  ? "border-b-2 border-orange-500 text-black"
-                  : "text-gray-600 hover:text-black"
-              }`}
-            >
-              {tab}
-            </button>
+            />
           ))}
         </div>
       </div>
@@ -190,51 +201,76 @@ export default function UserProfile() {
                 {user?.profile?.links?.website || user?.profile?.links?.twitter || user?.profile?.links?.github ? (
                   <div className="space-y-2">
                     {user?.profile?.links?.website && (
-                      <a href={user.profile.links.website} target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:text-blue-800">
+                      <a 
+                        href={user.profile.links.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="block text-blue-600 hover:text-blue-800"
+                        onClick={(e) => handleClick('user-profile-website-link', `User clicked website link: ${user.profile?.links?.website}`, e)}
+                      >
                         🔗 {user.profile.links.website}
                       </a>
                     )}
                     {user?.profile?.links?.twitter && (
-                      <a href={`https://twitter.com/${user.profile.links.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:text-blue-800">
+                      <a 
+                        href={`https://twitter.com/${user.profile.links.twitter.replace('@', '')}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="block text-blue-600 hover:text-blue-800"
+                        onClick={(e) => handleClick('user-profile-twitter-link', `User clicked Twitter link: ${user.profile?.links?.twitter}`, e)}
+                      >
                         𝕏 {user.profile.links.twitter}
                       </a>
                     )}
                     {user?.profile?.links?.github && (
-                      <a href={`https://github.com/${user.profile.links.github}`} target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:text-blue-800">
-                        <span className="inline-block align-text-bottom mr-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12" />
-                          </svg>
-                        </span>
-                        {user.profile.links.github}
+                      <a 
+                        href={`https://github.com/${user.profile.links.github.replace('@', '')}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="block text-blue-600 hover:text-blue-800"
+                        onClick={(e) => handleClick('user-profile-github-link', `User clicked GitHub link: ${user.profile?.links?.github}`, e)}
+                      >
+                        📧 {user.profile.links.github}
                       </a>
                     )}
                   </div>
                 ) : (
-                  <p className="text-gray-600">No links have been added to your profile yet.</p>
+                  <p className="text-gray-500">No links to show</p>
                 )}
               </div>
 
+              {/* Questions Section */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">Questions</h2>
+                  <h2 className="text-xl font-bold">Questions ({stats.questions})</h2>
+                  {stats.questions > 0 && (
+                    <Link 
+                      href={`/users/${params.id}/questions`}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      onClick={(e) => handleClick('view-all-questions-link', 'User clicked view all questions link', e)}
+                    >
+                      View all →
+                    </Link>
+                  )}
                 </div>
+                
                 {isLoading ? (
-                  <div className="flex justify-center items-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    <p className="mt-2 text-gray-600">Loading questions...</p>
                   </div>
                 ) : error ? (
-                  <p className="text-red-600 text-center py-4">{error}</p>
+                  <div className="text-center py-8">
+                    <p className="text-red-600">{error}</p>
+                  </div>
                 ) : userQuestions.length > 0 ? (
-                  <div className="divide-y divide-gray-200">
-                    {userQuestions.map((question) => (
+                  <div className="space-y-4">
+                    {userQuestions.slice(0, 5).map((question) => (
                       <QuestionCard key={question.id} question={question} />
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-600 text-center py-4">
-                    You haven't asked any questions yet. Share your knowledge with the community!
-                  </p>
+                  <p className="text-gray-500 py-8 text-center">No questions to show</p>
                 )}
               </div>
             </div>
@@ -242,20 +278,28 @@ export default function UserProfile() {
 
           {activeTab === "Activity" && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <p className="text-gray-600">No recent activity to show.</p>
+              <h2 className="text-xl font-bold mb-4">Activity</h2>
+              <p className="text-gray-500">No activity to show</p>
             </div>
           )}
 
           {activeTab === "Saves" && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <p className="text-gray-600">No saved items yet.</p>
+              <h2 className="text-xl font-bold mb-4">Saves</h2>
+              <p className="text-gray-500">No saves to show</p>
             </div>
           )}
 
           {activeTab === "Settings" && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-              <p className="text-gray-600">Profile settings coming soon.</p>
+              <h2 className="text-xl font-bold mb-4">Settings</h2>
+              <Link 
+                href="/users/edit"
+                className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={(e) => handleClick('settings-edit-profile', 'User clicked Edit Profile from Settings', e)}
+              >
+                Edit Profile
+              </Link>
             </div>
           )}
         </div>

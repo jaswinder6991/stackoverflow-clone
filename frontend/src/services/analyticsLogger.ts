@@ -94,6 +94,18 @@ export interface Log {
   payload: LogPayload;
 }
 
+// Utility function to get or create session ID
+export const getSessionId = (): string => {
+  if (typeof window === 'undefined') return '';
+  
+  let sessionId = localStorage.getItem('analytics_session_id');
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('analytics_session_id', sessionId);
+  }
+  return sessionId;
+};
+
 export const logEvent = async (sessionId: string, actionType: ActionType, payload: LogPayload) => {
   try {
     const response = await fetch(
@@ -117,4 +129,58 @@ export const logEvent = async (sessionId: string, actionType: ActionType, payloa
     console.error("Error logging action:", error);
     // Don't throw - we don't want analytics errors to break the app
   }
+};
+
+// Helper functions for common logging patterns
+export const logClick = (elementId: string, text: string, coordinates?: { x: number; y: number }) => {
+  const sessionId = getSessionId();
+  const payload: ClickPayload = {
+    text,
+    page_url: window.location.href,
+    element_identifier: elementId,
+    coordinates: coordinates || { x: 0, y: 0 }
+  };
+  logEvent(sessionId, ActionType.CLICK, payload);
+};
+
+export const logKeyPress = (elementId: string, text: string, key: string) => {
+  const sessionId = getSessionId();
+  const payload: KeyPressPayload = {
+    text,
+    page_url: window.location.href,
+    element_identifier: elementId,
+    key
+  };
+  logEvent(sessionId, ActionType.KEY_PRESS, payload);
+};
+
+export const logScroll = (text: string, scrollX: number, scrollY: number) => {
+  const sessionId = getSessionId();
+  const payload: ScrollPayload = {
+    text,
+    page_url: window.location.href,
+    scroll_x: scrollX,
+    scroll_y: scrollY
+  };
+  logEvent(sessionId, ActionType.SCROLL, payload);
+};
+
+export const logNavigation = (actionType: ActionType.GO_BACK | ActionType.GO_FORWARD | ActionType.GO_TO_URL, text: string, targetUrl?: string) => {
+  const sessionId = getSessionId();
+  let payload: GoBackPayload | GoForwardPayload | GoToUrlPayload;
+  
+  if (actionType === ActionType.GO_TO_URL && targetUrl) {
+    payload = {
+      text,
+      page_url: window.location.href,
+      target_url: targetUrl
+    };
+  } else {
+    payload = {
+      text,
+      page_url: window.location.href
+    };
+  }
+  
+  logEvent(sessionId, actionType, payload);
 }; 

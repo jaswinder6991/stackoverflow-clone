@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { logEvent, ActionType } from '@/services/analyticsLogger';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   }>({});
   const router = useRouter();
   const { register } = useAuth();
+  const { handleClick, handleKeyPress } = useAnalytics();
 
   const validatePassword = (pass: string) => {
     const errors: string[] = [];
@@ -58,13 +60,8 @@ export default function RegisterPage() {
 
     try {
       await register(username, email, password);
-      // Log successful registration
-      logEvent('register-session', ActionType.CLICK, {
-        text: 'User registered successfully',
-        page_url: window.location.href,
-        element_identifier: 'register-submit-btn',
-        coordinates: { x: 0, y: 0 }
-      });
+      // Log successful registration with session ID
+      handleClick('register-submit-btn', `User registered successfully with username: ${username}, email: ${email}`);
       router.push('/');
     } catch (err) {
       // Handle the error response from the backend
@@ -91,13 +88,8 @@ export default function RegisterPage() {
       } else {
         setError('Registration failed. Please try again.');
       }
-      // Log failed registration
-      logEvent('register-session', ActionType.CLICK, {
-        text: 'Registration attempt failed',
-        page_url: window.location.href,
-        element_identifier: 'register-submit-btn',
-        coordinates: { x: 0, y: 0 }
-      });
+      // Log failed registration attempt
+      handleClick('register-submit-btn', `Registration attempt failed for username: ${username}, email: ${email}`);
     }
   };
 
@@ -123,7 +115,13 @@ export default function RegisterPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUsername(value);
+                  if (value.trim()) {
+                    handleKeyPress('register-username-input', `User typed username: ${value}`, value);
+                  }
+                }}
               />
             </div>
             <div>
@@ -138,7 +136,13 @@ export default function RegisterPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setEmail(value);
+                  if (value.trim()) {
+                    handleKeyPress('register-email-input', `User typed email: ${value}`, value);
+                  }
+                }}
               />
             </div>
             <div>
@@ -153,7 +157,13 @@ export default function RegisterPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPassword(value);
+                  if (value.trim()) {
+                    handleKeyPress('register-password-input', 'User typed password for registration', '***');
+                  }
+                }}
               />
             </div>
             <div>
@@ -168,7 +178,13 @@ export default function RegisterPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Confirm Password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setConfirmPassword(value);
+                  if (value.trim()) {
+                    handleKeyPress('register-confirm-password-input', 'User typed password confirmation', '***');
+                  }
+                }}
               />
             </div>
           </div>
@@ -198,8 +214,11 @@ export default function RegisterPage() {
               type="submit"
               id="register-submit-btn"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={(e) => {
+                handleClick('register-submit-btn', `User clicked register button with username: ${username}, email: ${email}`, e);
+              }}
             >
-              Register
+              Create Account
             </button>
           </div>
         </form>
