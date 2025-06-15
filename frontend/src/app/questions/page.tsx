@@ -1,10 +1,12 @@
 import { generateSampleQuestion } from '@/lib/sampleData';
+import Layout from '@/components/Layout';
 
 export default function QuestionsPage() {
   // Generate sample questions
   const questions = Array.from({ length: 10 }, (_, i) => generateSampleQuestion(i + 1));
 
   return (
+    <Layout>
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
@@ -61,5 +63,6 @@ export default function QuestionsPage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

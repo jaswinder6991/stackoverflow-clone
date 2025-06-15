@@ -70,10 +70,7 @@ async def create_tag(
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
-    return data_service.create_tag(
-        name=tag.name,
-        description=tag.description
-    )
+    return data_service.create_tag(tag)
 
 @router.put("/{tag_id}", response_model=Tag)
 async def update_tag(

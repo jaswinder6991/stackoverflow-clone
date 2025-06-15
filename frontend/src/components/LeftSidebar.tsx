@@ -37,7 +37,7 @@ const LeftSidebar = () => {
             </li>
 
             {/* Questions */}
-            <li>
+            {/* <li>
               <Link href="/questions" className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                 isCurrentPath('/questions') 
                   ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600' 
@@ -48,7 +48,7 @@ const LeftSidebar = () => {
                 </svg>
                 Questions
               </Link>
-            </li>
+            </li> */}
 
             {/* Staging Ground */}
             <li>

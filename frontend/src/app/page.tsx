@@ -3,15 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
-import TopNav from '@/components/TopNav';
 import apiService from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchQuestions = async () => {

@@ -1,5 +1,5 @@
 import QuestionDetail from "@/components/QuestionDetail";
-import { generateSampleQuestion } from "@/lib/sampleData";
+import Layout from "@/components/Layout";
 
 interface QuestionPageProps {
   params: Promise<{
@@ -10,12 +10,11 @@ interface QuestionPageProps {
 export default async function QuestionPage({ params }: QuestionPageProps) {
   const { id } = await params;
   
-  // Generate sample question data based on ID
-  const questionData = generateSampleQuestion(parseInt(id));
-
   return (
-    <div className="bg-white min-h-screen">
-      <QuestionDetail question={questionData} />
-    </div>
+    <Layout>
+      <div className="bg-white min-h-screen">
+        <QuestionDetail questionId={parseInt(id)} />
+      </div>
+    </Layout>
   );
 }

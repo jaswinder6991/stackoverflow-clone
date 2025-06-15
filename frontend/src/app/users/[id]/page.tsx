@@ -2,8 +2,9 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import type { Question } from "@/lib/sampleData";
 
 interface TabProps {
   label: string;
@@ -24,17 +25,76 @@ const Tab = ({ label, isActive, onClick }: TabProps) => (
   </button>
 );
 
+const QuestionCard = ({ question }: { question: Question }) => (
+  <div className="border-b border-gray-200 py-4 last:border-b-0">
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <Link 
+          href={`/questions/${question.id}`}
+          className="text-lg font-medium text-blue-600 hover:text-blue-800 block mb-2"
+        >
+          {question.title}
+        </Link>
+        <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+          {question.content}
+        </p>
+        <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <span>{question.votes} votes</span>
+          <span>{question.answers.length} answers</span>
+          <span>{question.views} views</span>
+          <span>asked {question.asked}</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 ml-4">
+        {question.tags.map((tag) => (
+          <span
+            key={tag}
+            className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs whitespace-nowrap"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 export default function UserProfile() {
   const { user } = useAuth();
   const params = useParams();
   const [activeTab, setActiveTab] = useState("Profile");
+  const [userQuestions, setUserQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserQuestions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch(`/api/users/${params.id}/questions?page=1&limit=10`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch questions');
+        }
+        const data = await response.json();
+        setUserQuestions(data.items); // The API returns items in a PaginatedResponse format
+      } catch (err) {
+        setError('Failed to load questions');
+        console.error('Error fetching questions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserQuestions();
+  }, [params.id]);
 
   // Stats for the profile
   const stats = {
     reputation: 1,
-    reached: 0,
+    reached: userQuestions.reduce((acc, q) => acc + (typeof q.views === 'string' ? parseInt(q.views) : q.views), 0),
     answers: 0,
-    questions: 0,
+    questions: userQuestions.length,
   };
 
   const tabs = ["Profile", "Activity", "Saves", "Settings"];
@@ -156,10 +216,26 @@ export default function UserProfile() {
               </div>
 
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-bold mb-4">Posts</h2>
-                <p className="text-gray-600">
-                  You haven't created any posts yet. Start contributing to the community!
-                </p>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">Questions</h2>
+                </div>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : error ? (
+                  <p className="text-red-600 text-center py-4">{error}</p>
+                ) : userQuestions.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {userQuestions.map((question) => (
+                      <QuestionCard key={question.id} question={question} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600 text-center py-4">
+                    You haven't asked any questions yet. Share your knowledge with the community!
+                  </p>
+                )}
               </div>
             </div>
           )}

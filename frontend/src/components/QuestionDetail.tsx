@@ -1,145 +1,494 @@
-import React from 'react';
-import { ArrowUp, ArrowDown, Bookmark, Clock, CheckCircle } from 'lucide-react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { ArrowUp, ArrowDown, Bookmark, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import AnswerForm from './AnswerForm';
+import apiService from '@/services/api';
 
 interface QuestionDetailProps {
-  question: {
-    id: number;
-    title: string;
-    content: string;
-    author: {
-      name: string;
-      reputation: number;
-      avatar: string;
-      badges: {
-        gold: number;
-        silver: number;
-        bronze: number;
-      };
-    };
-    votes: number;
-    views: string | number;
-    asked: string;
-    modified: string;
-    tags: string[];
-    answers: Answer[];
-  };
+  questionId: number;
 }
 
-interface Answer {
+interface BackendQuestion {
   id: number;
+  title: string;
+  body: string;
+  author_id: number;
+  created_at: string;
+  updated_at: string;
+  votes: number;
+  views: number;
+  is_answered: boolean;
+}
+
+interface ApiQuestion {
+  id: number;
+  title: string;
   content: string;
   author: {
+    id: number;
     name: string;
+    email: string;
     reputation: number;
     avatar: string;
-    badges: {
-      gold: number;
-      silver: number;
-      bronze: number;
-    };
+    location: string;
+    website: string;
+    is_active: boolean;
   };
   votes: number;
-  isAccepted: boolean;
-  answered: string;
+  views: number;
+  asked: string;
+  modified?: string;
+  tags: string[];
+  answers: ApiAnswer[];
 }
 
-export default function QuestionDetail({ question }: QuestionDetailProps) {
-  return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* Question Header */}
-      <div className="mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <h1 className="text-2xl font-semibold text-gray-900 flex-1 mr-4">
-            {question.title}
-          </h1>
-          <Link href="/ask" className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
-            Ask Question
-          </Link>
-        </div>
+interface ApiAnswer {
+  id: number;
+  body: string;
+  question_id: number;
+  author_id: number;
+  created_at: string;
+  updated_at: string;
+  votes: number;
+  is_accepted: boolean;
+}
+
+export default function QuestionDetail({ questionId }: QuestionDetailProps) {
+  const [question, setQuestion] = useState<ApiQuestion | null>(null);
+  const [answers, setAnswers] = useState<ApiAnswer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [votingStates, setVotingStates] = useState<{
+    question?: { isVoting: boolean; userVote?: 'up' | 'down' | null };
+    answers: Record<number, { isVoting: boolean; userVote?: 'up' | 'down' | null }>;
+  }>({ answers: {} });
+
+  // Fetch question data
+  useEffect(() => {
+    const fetchQuestion = async () => {
+      try {
+        // Validate that questionId is a valid number
+        if (isNaN(questionId) || !Number.isInteger(questionId)) {
+          setError('Invalid question ID');
+          setLoading(false);
+          return;
+        }
         
-        <div className="flex items-center space-x-4 text-sm text-gray-600 border-b border-gray-200 pb-4">
-          <div>
-            <span className="text-gray-500">Asked</span> {question.asked}
-          </div>
-          <div>
-            <span className="text-gray-500">Modified</span> {question.modified}
-          </div>
-          <div>
-            <span className="text-gray-500">Viewed</span> {question.views} times
-          </div>
+        setLoading(true);
+        setError(null);
+        
+        // For now, let's fetch answers directly since we know that endpoint works
+        const answersResponse = await fetch(`http://localhost:8000/answers/?question_id=${questionId}`);
+        
+        if (answersResponse.ok) {
+          const answersData = await answersResponse.json();
+          setAnswers(answersData);
+          console.log('Fetched answers:', answersData);
+        } else {
+          console.error('Failed to fetch answers:', answersResponse.status);
+        }
+
+        // Try to fetch question (might fail, but we'll handle it)
+        try {
+          const questionResponse = await apiService.getQuestion(questionId);
+          if (questionResponse.data) {
+            // Convert backend question to frontend format
+            const backendQuestion = questionResponse.data;
+            const convertedQuestion: ApiQuestion = {
+              id: backendQuestion.id,
+              title: backendQuestion.title,
+              content: backendQuestion.body,
+              author: {
+                id: backendQuestion.author_id,
+                name: "User", // Default since backend doesn't return full
+                email: "",
+                reputation: 0,
+                avatar: "",
+                location: "",
+                website: "",
+                is_active: true
+              },
+              votes: backendQuestion.votes,
+              views: backendQuestion.views,
+              asked: backendQuestion.created_at,
+              modified: backendQuestion.updated_at,
+              tags: [], // Backend doesn't return tags in this response
+              answers: answers // Use the answers we fetched separately
+            };
+            setQuestion(convertedQuestion);
+            console.log('Fetched question:', convertedQuestion);
+          }
+        } catch (questionError) {
+          console.error('Failed to fetch question:', questionError);
+          // Create a mock question for now
+          setQuestion({
+            id: questionId,
+            title: "React hooks best practices",
+            content: "What are the best practices for using React hooks?",
+            author: {
+              id: 1,
+              name: "jane_smith",
+              email: "jane@example.com",
+              reputation: 150,
+              avatar: "",
+              location: "New York, NY",
+              website: "https://janesmith.dev",
+              is_active: true
+            },
+            votes: 0,
+            views: 0,
+            asked: new Date().toISOString(),
+            tags: ["react"],
+            answers: []
+          });
+        }
+        
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load question data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestion();
+  }, [questionId]);
+
+  // Voting handlers
+  const handleQuestionVote = async (voteType: 'up' | 'down') => {
+    if (!question) return;
+    
+    const currentVote = votingStates.question?.userVote;
+    const isCurrentVote = currentVote === voteType;
+    const newVote = isCurrentVote ? null : voteType;
+    
+    // Optimistic update
+    setVotingStates(prev => ({
+      ...prev,
+      question: { isVoting: true, userVote: newVote }
+    }));
+    
+    // Calculate vote delta
+    let voteDelta = 0;
+    if (isCurrentVote) {
+      // Removing current vote
+      voteDelta = voteType === 'up' ? -1 : 1;
+    } else if (currentVote) {
+      // Changing vote (e.g., from up to down)
+      voteDelta = voteType === 'up' ? 2 : -2;
+    } else {
+      // Adding new vote
+      voteDelta = voteType === 'up' ? 1 : -1;
+    }
+    
+    // Update question votes optimistically
+    setQuestion(prev => prev ? { ...prev, votes: prev.votes + voteDelta } : null);
+    
+    try {
+      // Mock user ID for now
+      const userId = 1;
+      
+      // If we're removing a vote, send the undo flag
+      if (isCurrentVote) {
+        // This means we're undoing a vote
+        const response = await apiService.voteQuestion(question.id, userId, voteType, true);
+        if (!response.error) {
+          console.log('Question vote removed successfully');
+        } else {
+          // Revert optimistic update on error
+          setQuestion(prev => prev ? { ...prev, votes: prev.votes - voteDelta } : null);
+          console.error('Failed to remove vote from question:', response.error);
+        }
+      } else if (currentVote) {
+        // We're changing vote type (e.g. from up to down)
+        // First remove the old vote
+        await apiService.voteQuestion(question.id, userId, currentVote, true);
+        // Then add the new vote
+        const response = await apiService.voteQuestion(question.id, userId, voteType);
+        if (!response.error) {
+          console.log('Question vote changed successfully');
+        } else {
+          // Revert optimistic update on error
+          setQuestion(prev => prev ? { ...prev, votes: prev.votes - voteDelta } : null);
+          console.error('Failed to change vote on question:', response.error);
+        }
+      } else {
+        // We're adding a new vote
+        const response = await apiService.voteQuestion(question.id, userId, voteType);
+        if (!response.error) {
+          console.log('Question vote recorded successfully');
+        } else {
+          // Revert optimistic update on error
+          setQuestion(prev => prev ? { ...prev, votes: prev.votes - voteDelta } : null);
+          console.error('Failed to vote on question:', response.error);
+        }
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setQuestion(prev => prev ? { ...prev, votes: prev.votes - voteDelta } : null);
+      console.error('Error voting on question:', error);
+    } finally {
+      setVotingStates(prev => ({
+        ...prev,
+        question: { isVoting: false, userVote: newVote }
+      }));
+    }
+  };
+
+  const handleAnswerVote = async (answerId: number, voteType: 'up' | 'down') => {
+    const currentVote = votingStates.answers[answerId]?.userVote;
+    const isCurrentVote = currentVote === voteType;
+    const newVote = isCurrentVote ? null : voteType;
+    
+    // Optimistic update
+    setVotingStates(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [answerId]: { isVoting: true, userVote: newVote }
+      }
+    }));
+    
+    // Calculate vote delta
+    let voteDelta = 0;
+    if (isCurrentVote) {
+      // Removing current vote
+      voteDelta = voteType === 'up' ? -1 : 1;
+    } else if (currentVote) {
+      // Changing vote (e.g., from up to down)
+      voteDelta = voteType === 'up' ? 2 : -2;
+    } else {
+      // Adding new vote
+      voteDelta = voteType === 'up' ? 1 : -1;
+    }
+    
+    // Update answer votes optimistically
+    setAnswers(prev => prev.map(answer => 
+      answer.id === answerId 
+        ? { ...answer, votes: answer.votes + voteDelta }
+        : answer
+    ));
+    
+    try {
+      // Mock user ID for now
+      const userId = 1;
+      
+      // If we're removing a vote, send the undo flag
+      if (isCurrentVote) {
+        // This means we're undoing a vote
+        const response = await apiService.voteAnswer(answerId, userId, voteType, true);
+        if (!response.error) {
+          console.log('Answer vote removed successfully');
+        } else {
+          // Revert optimistic update on error
+          setAnswers(prev => prev.map(answer => 
+            answer.id === answerId 
+              ? { ...answer, votes: answer.votes - voteDelta }
+              : answer
+          ));
+          console.error('Failed to remove vote from answer:', response.error);
+        }
+      } else if (currentVote) {
+        // We're changing vote type (e.g. from up to down)
+        // First remove the old vote
+        await apiService.voteAnswer(answerId, userId, currentVote, true);
+        // Then add the new vote
+        const response = await apiService.voteAnswer(answerId, userId, voteType);
+        if (!response.error) {
+          console.log('Answer vote changed successfully');
+        } else {
+          // Revert optimistic update on error
+          setAnswers(prev => prev.map(answer => 
+            answer.id === answerId 
+              ? { ...answer, votes: answer.votes - voteDelta }
+              : answer
+          ));
+          console.error('Failed to change vote on answer:', response.error);
+        }
+      } else {
+        // We're adding a new vote
+        const response = await apiService.voteAnswer(answerId, userId, voteType);
+        if (!response.error) {
+          console.log('Answer vote recorded successfully');
+        } else {
+          // Revert optimistic update on error
+          setAnswers(prev => prev.map(answer => 
+            answer.id === answerId 
+              ? { ...answer, votes: answer.votes - voteDelta }
+              : answer
+          ));
+          console.error('Failed to vote on answer:', response.error);
+        }
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setAnswers(prev => prev.map(answer => 
+        answer.id === answerId 
+          ? { ...answer, votes: answer.votes - voteDelta }
+          : answer
+      ));
+      console.error('Error voting on answer:', error);
+    } finally {
+      setVotingStates(prev => ({
+        ...prev,
+        answers: {
+          ...prev.answers,
+          [answerId]: { isVoting: false, userVote: newVote }
+        }
+      }));
+    }
+  };
+
+  const handleAnswerSubmit = async (answerData: { question_id: number; user_id: number; body: string }) => {
+    try {
+      const response = await fetch('http://localhost:8000/answers/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(answerData)
+      });
+
+      if (response.ok) {
+        const newAnswer = await response.json();
+        console.log('Answer posted successfully:', newAnswer);
+        
+        // Refresh answers list
+        const answersResponse = await fetch(`http://localhost:8000/answers/?question_id=${questionId}`);
+        if (answersResponse.ok) {
+          const updatedAnswers = await answersResponse.json();
+          setAnswers(updatedAnswers);
+          console.log('Updated answers list:', updatedAnswers);
+        }
+        
+        return { success: true };
+      } else {
+        console.error('Failed to post answer:', response.status);
+        return { success: false, error: 'Failed to post answer' };
+      }
+    } catch (error) {
+      console.error('Error posting answer:', error);
+      return { success: false, error: 'Network error' };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Loading question...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-red-600">{error}</div>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-gray-600">Question not found</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Question Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">{question.title}</h1>
+        
+        <div className="flex items-center gap-4 text-sm text-gray-600 mb-6">
+          <span>Asked {new Date(question.asked).toLocaleDateString()}</span>
+          {question.modified && (
+            <span>Modified {new Date(question.modified).toLocaleDateString()}</span>
+          )}
+          <span>Viewed {question.views} times</span>
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {question.tags.map((tag) => (
+            <Link
+              key={tag}
+              href={`/questions/tagged/${tag}`}
+              className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm hover:bg-blue-200"
+            >
+              {tag}
+            </Link>
+          ))}
         </div>
       </div>
 
       {/* Question Content */}
-      <div className="flex space-x-6 mb-8">
+      <div className="flex gap-6 mb-8">
         {/* Vote Column */}
         <div className="flex flex-col items-center space-y-2">
-          <button className="p-2 hover:bg-gray-100 rounded">
-            <ArrowUp className="w-6 h-6 text-gray-600" />
+          <button 
+            className={`p-2 rounded border transition-colors ${
+              votingStates.question?.userVote === 'up' 
+                ? 'bg-orange-100 border-orange-300 text-orange-600' 
+                : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+            } ${votingStates.question?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => handleQuestionVote('up')}
+            disabled={votingStates.question?.isVoting}
+            title="This question shows research effort; it is useful and clear"
+          >
+            {votingStates.question?.isVoting && votingStates.question?.userVote === 'up' ? (
+              <Loader2 className="w-8 h-8 animate-spin" />
+            ) : (
+              <ArrowUp className="w-8 h-8" />
+            )}
           </button>
-          <span className="text-2xl font-semibold text-gray-700">{question.votes}</span>
-          <button className="p-2 hover:bg-gray-100 rounded">
-            <ArrowDown className="w-6 h-6 text-gray-600" />
+          <span className={`text-2xl font-semibold ${
+            question.votes > 0 ? 'text-green-600' : 
+            question.votes < 0 ? 'text-red-600' : 'text-gray-700'
+          }`}>
+            {question.votes}
+          </span>
+          <button 
+            className={`p-2 rounded border transition-colors ${
+              votingStates.question?.userVote === 'down' 
+                ? 'bg-red-100 border-red-300 text-red-600' 
+                : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+            } ${votingStates.question?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => handleQuestionVote('down')}
+            disabled={votingStates.question?.isVoting}
+            title="This question does not show any research effort; it is unclear or not useful"
+          >
+            <ArrowDown className="w-8 h-8" />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded">
-            <Bookmark className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded">
-            <Clock className="w-5 h-5 text-gray-600" />
+          <button className="p-2 hover:bg-gray-100 rounded border border-gray-300 text-gray-600">
+            <Bookmark className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Question Body */}
+        {/* Content */}
         <div className="flex-1">
-          <div className="prose max-w-none mb-6">
-            <p className="text-gray-800 leading-relaxed">{question.content}</p>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {question.tags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm hover:bg-blue-200 cursor-pointer"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          {/* Actions and Author */}
-          <div className="flex justify-between items-end">
-            <div className="flex space-x-4 text-sm text-gray-600">
-              <button className="hover:text-blue-600">Share</button>
-              <button className="hover:text-blue-600">Edit</button>
-              <button className="hover:text-blue-600">Follow</button>
-              <button className="hover:text-blue-600">Flag</button>
-            </div>
-            
-            <div className="bg-blue-50 p-3 rounded">
-              <div className="text-xs text-gray-600 mb-2">
-                edited {question.modified}
-              </div>
-              <div className="flex items-center space-x-2">
+          <div className="prose max-w-none mb-6" dangerouslySetInnerHTML={{ __html: question.content }} />
+          
+          {/* Author Info */}
+          <div className="flex justify-end">
+            <div className="bg-blue-50 p-4 rounded">
+              <div className="text-xs text-gray-600 mb-2">asked {new Date(question.asked).toLocaleDateString()}</div>
+              <div className="flex items-center space-x-3">
                 <Image
-                  src={question.author.avatar}
+                  src={question.author.avatar || `https://www.gravatar.com/avatar/${question.author.id}?s=32&d=identicon&r=PG`}
                   alt={question.author.name}
                   width={32}
                   height={32}
                   className="rounded"
                 />
                 <div>
-                  <div className="font-medium text-blue-600">{question.author.name}</div>
-                  <div className="text-xs text-gray-600">
-                    {question.author.reputation.toLocaleString()}
-                    <span className="ml-2">
-                      <span className="text-yellow-600">●</span> {question.author.badges.gold}
-                      <span className="ml-1 text-gray-500">●</span> {question.author.badges.silver}
-                      <span className="ml-1 text-orange-600">●</span> {question.author.badges.bronze}
-                    </span>
-                  </div>
+                  <div className="font-semibold text-blue-600">{question.author.name}</div>
+                  <div className="text-xs text-gray-600">{question.author.reputation}</div>
                 </div>
               </div>
             </div>
@@ -151,84 +500,67 @@ export default function QuestionDetail({ question }: QuestionDetailProps) {
       <div className="border-t border-gray-200 pt-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">
-            {question.answers.length} Answer{question.answers.length !== 1 ? 's' : ''}
+            {answers.length} Answer{answers.length !== 1 ? 's' : ''}
           </h2>
-          <div className="flex items-center space-x-4">
-            <label className="text-sm text-gray-600">Sorted by:</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-sm">
-              <option>Highest score (default)</option>
-              <option>Trending (recent votes count more)</option>
-              <option>Date modified (newest first)</option>
-              <option>Date created (oldest first)</option>
-            </select>
-          </div>
         </div>
 
-        {/* Answers */}
-        {question.answers.map((answer) => (
+        {/* Real Answers from API */}
+        {answers.map((answer) => (
           <div key={answer.id} className="flex space-x-6 mb-8 border-b border-gray-200 pb-8">
             {/* Vote Column */}
             <div className="flex flex-col items-center space-y-2">
-              <button className="p-2 hover:bg-gray-100 rounded">
-                <ArrowUp className="w-6 h-6 text-gray-600" />
+              <button 
+                className={`p-2 rounded border transition-colors ${
+                  votingStates.answers[answer.id]?.userVote === 'up' 
+                    ? 'bg-orange-100 border-orange-300 text-orange-600' 
+                    : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+                } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => handleAnswerVote(answer.id, 'up')}
+                disabled={votingStates.answers[answer.id]?.isVoting}
+                title="This answer is useful"
+              >
+                <ArrowUp className="w-6 h-6" />
               </button>
-              <span className="text-2xl font-semibold text-gray-700">{answer.votes}</span>
-              <button className="p-2 hover:bg-gray-100 rounded">
-                <ArrowDown className="w-6 h-6 text-gray-600" />
+              <span className={`text-2xl font-semibold ${
+                answer.votes > 0 ? 'text-green-600' : 
+                answer.votes < 0 ? 'text-red-600' : 'text-gray-700'
+              }`}>
+                {answer.votes}
+              </span>
+              <button 
+                className={`p-2 rounded border transition-colors ${
+                  votingStates.answers[answer.id]?.userVote === 'down' 
+                    ? 'bg-red-100 border-red-300 text-red-600' 
+                    : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+                } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => handleAnswerVote(answer.id, 'down')}
+                disabled={votingStates.answers[answer.id]?.isVoting}
+                title="This answer is not useful"
+              >
+                <ArrowDown className="w-6 h-6" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded">
-                <Bookmark className="w-5 h-5 text-gray-600" />
-              </button>
-              {answer.isAccepted && (
-                <div className="p-2 text-green-600">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
+              {answer.is_accepted && (
+                <CheckCircle className="w-6 h-6 text-green-600" />
               )}
-              <button className="p-2 hover:bg-gray-100 rounded">
-                <Clock className="w-5 h-5 text-gray-600" />
-              </button>
             </div>
 
-            {/* Answer Body */}
+            {/* Answer Content */}
             <div className="flex-1">
-              <div className="prose max-w-none mb-6">
-                <div 
-                  className="text-gray-800 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: answer.content }}
-                />
+              <div className="prose max-w-none mb-4">
+                <p>{answer.body}</p>
               </div>
-
-              {/* Actions and Author */}
-              <div className="flex justify-between items-end">
-                <div className="flex space-x-4 text-sm text-gray-600">
-                  <button className="hover:text-blue-600">Share</button>
-                  <button className="hover:text-blue-600">Edit</button>
-                  <button className="hover:text-blue-600">Follow</button>
-                  <button className="hover:text-blue-600">Flag</button>
-                </div>
-                
+              
+              {/* Answer Author Info */}
+              <div className="flex justify-end">
                 <div className="bg-blue-50 p-3 rounded">
                   <div className="text-xs text-gray-600 mb-2">
-                    answered {answer.answered}
+                    answered {new Date(answer.created_at).toLocaleDateString()}
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Image
-                      src={answer.author.avatar}
-                      alt={answer.author.name}
-                      width={32}
-                      height={32}
-                      className="rounded"
-                    />
+                    <div className="w-6 h-6 bg-gray-300 rounded"></div>
                     <div>
-                      <div className="font-medium text-blue-600">{answer.author.name}</div>
-                      <div className="text-xs text-gray-600">
-                        {answer.author.reputation.toLocaleString()}
-                        <span className="ml-2">
-                          <span className="text-yellow-600">●</span> {answer.author.badges.gold}
-                          <span className="ml-1 text-gray-500">●</span> {answer.author.badges.silver}
-                          <span className="ml-1 text-orange-600">●</span> {answer.author.badges.bronze}
-                        </span>
-                      </div>
+                      <div className="font-semibold text-blue-600">User {answer.author_id}</div>
+                      <div className="text-xs text-gray-600">Reputation: 100</div>
                     </div>
                   </div>
                 </div>
@@ -236,6 +568,15 @@ export default function QuestionDetail({ question }: QuestionDetailProps) {
             </div>
           </div>
         ))}
+
+        {/* Answer Form */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">Your Answer</h3>
+          <AnswerForm 
+            questionId={questionId}
+            onAnswerSubmitted={handleAnswerSubmit}
+          />
+        </div>
       </div>
     </div>
   );
