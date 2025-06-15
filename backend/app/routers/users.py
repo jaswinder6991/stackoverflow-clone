@@ -2,19 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from ..db.db import get_db
+from ..db import models as db_models
 from ..data_service import DataService
 from ..models import User, PaginatedResponse, UserCreate, UserUpdate, UserStats, UserProfile
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-@router.get("/", response_model=List[User])
+@router.get("/", response_model=PaginatedResponse[User])
 async def get_users(
-    skip: int = 0,
-    limit: int = 10,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None, description="Search users by name or location"),
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
-    return data_service.get_users(skip=skip, limit=limit)
+    return data_service.get_users(page=page, limit=limit, search=search)
 
 @router.get("/{user_id}", response_model=User)
 async def get_user(
@@ -115,12 +117,17 @@ async def update_user_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Convert UserProfile to dict before saving
-    user.profile = profile.dict()
+    # Get the actual database user object to update the profile
+    db_user = db.query(db_models.User).filter(db_models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update the profile JSON field
+    setattr(db_user, 'profile', profile.dict())
     
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(db_user)
+    return db_user
 
 @router.delete("/{user_id}")
 async def delete_user(

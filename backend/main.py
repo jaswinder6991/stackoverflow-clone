@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import questions, users, tags, search, answers, synthetic, auth
+from app.routers import questions, users, tags, search, answers, synthetic, auth, comments
 from app.db.db import init_db, get_db, drop_db, populate_database
 from app.db.models import User
 from sqlalchemy.orm import Session
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(questions.router)
 app.include_router(answers.router)
+app.include_router(comments.router)
 app.include_router(users.router)
 app.include_router(tags.router)
 app.include_router(search.router)
@@ -55,14 +56,31 @@ async def startup_event():
     db = next(get_db())
     try:
         print("Ensuring database tables exist...")
-        # Create tables first (this is safe - only creates if they don't exist)
+        
+        # First, always ensure tables are created/updated
         init_db()
-
-        # Now it's safe to query since tables exist
-        first_user = db.query(User).first()
-        if first_user is not None:
-            print("Database already has data, skipping population")
-            return
+        
+        # Check if we need to recreate the database due to schema changes
+        try:
+            # Try to query the users table to see if it has the expected schema
+            first_user = db.query(User).first()
+            print("Database schema is compatible")
+            
+            if first_user is not None:
+                print("Database already has data, skipping population")
+                return
+                
+        except Exception as schema_error:
+            print(f"Database schema mismatch detected: {schema_error}")
+            print("Recreating database with updated schema...")
+            db.close()
+            
+            # Drop and recreate the database
+            drop_db()
+            init_db()
+            
+            # Get a fresh database session
+            db = next(get_db())
 
         print("Database is empty, populating with sample data...")
         try:

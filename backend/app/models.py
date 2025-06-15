@@ -238,3 +238,24 @@ class SearchResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+# Comment models
+class CommentBase(BaseModel):
+    body: str = Field(..., min_length=15, max_length=1000)
+
+class CommentCreate(CommentBase):
+    question_id: Optional[int] = None
+    answer_id: Optional[int] = None
+    author_id: int
+
+class Comment(CommentBase):
+    id: int
+    author_id: int
+    question_id: Optional[int] = None
+    answer_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    votes: int = 0
+
+    class Config:
+        from_attributes = True

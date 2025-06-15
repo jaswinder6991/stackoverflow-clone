@@ -1,16 +1,47 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy.orm import Session, joinedload
+from typing import List, Optional, cast, Any
 from ..db.db import get_db
 from ..db import models as db_models
+from ..db.models import Question as DBQuestion, User as DBUser
 from ..data_service import DataService
-from ..models import Question, QuestionSummary, QuestionCreate, QuestionUpdate, MessageResponse, PaginatedResponse
+from ..models import Question, QuestionSummary, QuestionCreate, QuestionUpdate, MessageResponse, PaginatedResponse, UserBase
 import math
 
 router = APIRouter(
     prefix="/questions",
     tags=["questions"]
 )
+
+
+def convert_user_to_userbase(db_user: DBUser) -> UserBase:
+    """Convert SQLAlchemy User model to Pydantic UserBase model"""
+    if not db_user:
+        # Return a default user if the relationship is missing
+        return UserBase(
+            name="Unknown User",
+            email="unknown@example.com",
+            reputation=0,
+            avatar="",
+            location=None,
+            website=None,
+            is_active=True,
+            profile=None
+        )
+    
+    location_val = cast(str, db_user.location)
+    website_val = cast(str, db_user.website)
+    
+    return UserBase(
+        name=cast(str, db_user.name),
+        email=cast(str, db_user.email),
+        reputation=cast(int, db_user.reputation),
+        avatar="",  # Add avatar field to DB model if needed
+        location=location_val if location_val else None,
+        website=website_val if website_val else None,
+        is_active=cast(bool, db_user.is_active),
+        profile=cast(Any, db_user.profile)
+    )
 
 @router.get("/", response_model=PaginatedResponse)
 async def get_questions(
@@ -41,16 +72,18 @@ async def get_questions(
     
     questions = []
     for q_data in questions_data:
+        # Cast q_data to DBQuestion to help type checker
+        db_question: DBQuestion = q_data
         question = QuestionSummary(
-            id=q_data.id,
-            title=q_data.title,
-            content=q_data.body[:200] + "..." if len(q_data.body) > 200 else q_data.body,
-            author=q_data.author,
-            tags=[t.name for t in q_data.tags],
-            votes=q_data.votes,
-            views=q_data.views,
-            answer_count=len(q_data.answers),
-            asked=q_data.created_at
+            id=cast(int, db_question.id),
+            title=cast(str, db_question.title),
+            content=cast(str, db_question.body)[:200] + "..." if len(cast(str, db_question.body)) > 200 else cast(str, db_question.body),
+            author=convert_user_to_userbase(cast(DBUser, db_question.author)),
+            tags=[t.name for t in db_question.tags] if hasattr(db_question, 'tags') and db_question.tags else [],
+            votes=cast(int, db_question.votes),
+            views=cast(int, db_question.views),
+            answer_count=len(db_question.answers) if hasattr(db_question, 'answers') and db_question.answers else 0,
+            asked=cast(Any, db_question.created_at)
         )
         questions.append(question)
     
@@ -195,6 +228,7 @@ async def vote_question(
     question_id: int,
     user_id: int,
     vote_type: str = Query(..., description="Vote type: up or down"),
+    undo: bool = Query(False, description="Remove the vote instead of adding it"),
     db: Session = Depends(get_db)
 ):
     """Vote on a question"""
@@ -208,8 +242,12 @@ async def vote_question(
     if vote_type not in ["up", "down"]:
         raise HTTPException(status_code=400, detail="Invalid vote type")
     
-    data_service.vote_question(question_id, user_id, vote_type)
-    return {"message": "Vote recorded successfully"}
+    if undo:
+        data_service.remove_question_vote(question_id, user_id, vote_type)
+        return {"message": "Vote removed successfully"}
+    else:
+        data_service.vote_question(question_id, user_id, vote_type)
+        return {"message": "Vote recorded successfully"}
 
 @router.get("/tagged/{tag}", response_model=List[QuestionSummary])
 async def get_questions_tagged(
@@ -231,17 +269,56 @@ async def get_questions_tagged(
     
     questions = []
     for q_data in questions_data:
+        # Cast q_data to DBQuestion to help type checker
+        db_question: DBQuestion = q_data
         question = QuestionSummary(
-            id=q_data["id"],
-            title=q_data["title"],
-            content=q_data["content"][:200] + "..." if len(q_data["content"]) > 200 else q_data["content"],
-            author=q_data["author"],
-            tags=q_data["tags"],
-            votes=q_data["votes"],
-            views=q_data["views"],
-            answer_count=q_data.get("answer_count", 0),
-            asked=q_data["asked"]
+            id=cast(int, db_question.id),
+            title=cast(str, db_question.title),
+            content=cast(str, db_question.body)[:200] + "..." if len(cast(str, db_question.body)) > 200 else cast(str, db_question.body),
+            author=convert_user_to_userbase(cast(DBUser, db_question.author)),
+            tags=[t.name for t in db_question.tags] if hasattr(db_question, 'tags') and db_question.tags else [],
+            votes=cast(int, db_question.votes),
+            views=cast(int, db_question.views),
+            answer_count=len(db_question.answers) if hasattr(db_question, 'answers') and db_question.answers else 0,
+            asked=cast(Any, db_question.created_at)
         )
         questions.append(question)
     
     return questions
+
+@router.get("/{question_id}/user_vote")
+async def get_user_vote_on_question(
+    question_id: int,
+    user_id: int = Query(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """Get user's vote on a question"""
+    data_service = DataService(db)
+    
+    question_data = data_service.get_question_by_id(question_id)
+    if not question_data:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    vote = data_service.get_user_vote_on_question(question_id, user_id)
+    return {"vote": vote}
+
+@router.get("/{question_id}/user_votes")
+async def get_user_votes_on_question(
+    question_id: int,
+    user_id: int = Query(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """Get user's votes on question and all its answers"""
+    data_service = DataService(db)
+    
+    question_data = data_service.get_question_by_id(question_id)
+    if not question_data:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    question_vote = data_service.get_user_vote_on_question(question_id, user_id)
+    answer_votes = data_service.get_user_votes_on_question_answers(question_id, user_id)
+    
+    return {
+        "question_vote": question_vote,
+        "answer_votes": answer_votes
+    }

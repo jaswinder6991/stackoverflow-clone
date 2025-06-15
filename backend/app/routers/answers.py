@@ -89,6 +89,7 @@ async def vote_answer(
     answer_id: int,
     user_id: int,
     vote_type: str = Query(..., description="Vote type: up or down"),
+    undo: bool = Query(False, description="Remove the vote instead of adding it"),
     db: Session = Depends(get_db)
 ):
     data_service = DataService(db)
@@ -99,5 +100,25 @@ async def vote_answer(
     if vote_type not in ["up", "down"]:
         raise HTTPException(status_code=400, detail="Invalid vote type")
     
-    data_service.vote_answer(answer_id, user_id, vote_type)
-    return {"message": "Vote recorded successfully"}
+    if undo:
+        data_service.remove_answer_vote(answer_id, user_id, vote_type)
+        return {"message": "Vote removed successfully"}
+    else:
+        data_service.vote_answer(answer_id, user_id, vote_type)
+        return {"message": "Vote recorded successfully"}
+
+@router.get("/{answer_id}/user_vote")
+async def get_user_vote_on_answer(
+    answer_id: int,
+    user_id: int = Query(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """Get user's vote on an answer"""
+    data_service = DataService(db)
+    
+    answer = data_service.get_answer(answer_id)
+    if not answer:
+        raise HTTPException(status_code=404, detail="Answer not found")
+    
+    vote = data_service.get_user_vote_on_answer(answer_id, user_id)
+    return {"vote": vote}

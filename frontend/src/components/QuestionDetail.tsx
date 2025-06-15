@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown, Bookmark, Clock, CheckCircle, Loader2 } from 'lucid
 import Link from 'next/link';
 import Image from 'next/image';
 import AnswerForm from './AnswerForm';
+import CommentSection from './CommentSection';
 import apiService from '@/services/api';
 
 interface QuestionDetailProps {
@@ -21,6 +22,11 @@ interface BackendQuestion {
   votes: number;
   views: number;
   is_answered: boolean;
+}
+
+interface UserVotesResponse {
+  question_vote: 'up' | 'down' | null;
+  answer_votes: Record<string, 'up' | 'down'>;
 }
 
 interface ApiQuestion {
@@ -59,6 +65,8 @@ interface ApiAnswer {
 export default function QuestionDetail({ questionId }: QuestionDetailProps) {
   const [question, setQuestion] = useState<ApiQuestion | null>(null);
   const [answers, setAnswers] = useState<ApiAnswer[]>([]);
+  const [questionComments, setQuestionComments] = useState<any[]>([]);
+  const [answerComments, setAnswerComments] = useState<Record<number, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [votingStates, setVotingStates] = useState<{
@@ -80,6 +88,38 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
         setLoading(true);
         setError(null);
         
+        // Mock user ID for now - in a real app this would come from auth context
+        const userId = 1;
+        
+        // Fetch user's existing votes on this question and its answers
+        try {
+          const userVotesResponse = await apiService.getUserVotesOnQuestion(questionId, userId);
+          if (userVotesResponse.data) {
+            const votesData = userVotesResponse.data as UserVotesResponse;
+            const { question_vote, answer_votes } = votesData;
+            
+            // Set initial voting states based on existing votes
+            setVotingStates(prev => ({
+              question: { 
+                isVoting: false, 
+                userVote: question_vote === 'up' ? 'up' : question_vote === 'down' ? 'down' : null 
+              },
+              answers: Object.keys(answer_votes).reduce((acc, answerId) => {
+                const vote = answer_votes[parseInt(answerId)];
+                acc[parseInt(answerId)] = {
+                  isVoting: false,
+                  userVote: vote === 'up' ? 'up' : vote === 'down' ? 'down' : null
+                };
+                return acc;
+              }, {} as Record<number, { isVoting: boolean; userVote?: 'up' | 'down' | null }>)
+            }));
+          }
+        } catch (voteError) {
+          console.log('Could not fetch user votes (user may not be logged in):', voteError);
+          // Initialize with empty voting states
+          setVotingStates({ answers: {} });
+        }
+        
         // For now, let's fetch answers directly since we know that endpoint works
         const answersResponse = await fetch(`http://localhost:8000/answers/?question_id=${questionId}`);
         
@@ -87,6 +127,21 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
           const answersData = await answersResponse.json();
           setAnswers(answersData);
           console.log('Fetched answers:', answersData);
+          
+          // Load comments for each answer
+          const answerCommentsMap: Record<number, any[]> = {};
+          for (const answer of answersData) {
+            try {
+              const commentsResponse = await apiService.getAnswerComments(answer.id);
+              if (commentsResponse.data) {
+                answerCommentsMap[answer.id] = commentsResponse.data;
+              }
+            } catch (error) {
+              console.error(`Error loading comments for answer ${answer.id}:`, error);
+              answerCommentsMap[answer.id] = [];
+            }
+          }
+          setAnswerComments(answerCommentsMap);
         } else {
           console.error('Failed to fetch answers:', answersResponse.status);
         }
@@ -120,6 +175,17 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
             };
             setQuestion(convertedQuestion);
             console.log('Fetched question:', convertedQuestion);
+            
+            // Load comments for the question
+            try {
+              const questionCommentsResponse = await apiService.getQuestionComments(questionId);
+              if (questionCommentsResponse.data) {
+                setQuestionComments(questionCommentsResponse.data);
+              }
+            } catch (error) {
+              console.error('Error loading question comments:', error);
+              setQuestionComments([]);
+            }
           }
         } catch (questionError) {
           console.error('Failed to fetch question:', questionError);
@@ -157,6 +223,32 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
     fetchQuestion();
   }, [questionId]);
 
+  // Comment refresh functions
+  const refreshQuestionComments = async () => {
+    try {
+      const response = await apiService.getQuestionComments(questionId);
+      if (response.data) {
+        setQuestionComments(response.data);
+      }
+    } catch (error) {
+      console.error('Error refreshing question comments:', error);
+    }
+  };
+
+  const refreshAnswerComments = async (answerId: number) => {
+    try {
+      const response = await apiService.getAnswerComments(answerId);
+      if (response.data) {
+        setAnswerComments(prev => ({
+          ...prev,
+          [answerId]: response.data!
+        }));
+      }
+    } catch (error) {
+      console.error('Error refreshing answer comments:', error);
+    }
+  };
+
   // Voting handlers
   const handleQuestionVote = async (voteType: 'up' | 'down') => {
     if (!question) return;
@@ -171,14 +263,17 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
       question: { isVoting: true, userVote: newVote }
     }));
     
-    // Calculate vote delta
+    // Calculate vote delta based on Stack Overflow style voting
+    // Each user can only have one vote, changing votes removes old and adds new
     let voteDelta = 0;
     if (isCurrentVote) {
       // Removing current vote
       voteDelta = voteType === 'up' ? -1 : 1;
     } else if (currentVote) {
       // Changing vote (e.g., from up to down)
-      voteDelta = voteType === 'up' ? 2 : -2;
+      const removeOldVote = currentVote === 'up' ? -1 : 1;
+      const addNewVote = voteType === 'up' ? 1 : -1;
+      voteDelta = removeOldVote + addNewVote;
     } else {
       // Adding new vote
       voteDelta = voteType === 'up' ? 1 : -1;
@@ -252,14 +347,17 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
       }
     }));
     
-    // Calculate vote delta
+    // Calculate vote delta based on Stack Overflow style voting
+    // Each user can only have one vote, changing votes removes old and adds new
     let voteDelta = 0;
     if (isCurrentVote) {
       // Removing current vote
       voteDelta = voteType === 'up' ? -1 : 1;
     } else if (currentVote) {
       // Changing vote (e.g., from up to down)
-      voteDelta = voteType === 'up' ? 2 : -2;
+      const removeOldVote = currentVote === 'up' ? -1 : 1;
+      const addNewVote = voteType === 'up' ? 1 : -1;
+      voteDelta = removeOldVote + addNewVote;
     } else {
       // Adding new vote
       voteDelta = voteType === 'up' ? 1 : -1;
@@ -496,6 +594,13 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
         </div>
       </div>
 
+      {/* Question Comments */}
+      <CommentSection
+        questionId={question.id}
+        comments={questionComments}
+        onCommentsUpdated={refreshQuestionComments}
+      />
+
       {/* Answers Section */}
       <div className="border-t border-gray-200 pt-6">
         <div className="flex justify-between items-center mb-6">
@@ -506,66 +611,75 @@ export default function QuestionDetail({ questionId }: QuestionDetailProps) {
 
         {/* Real Answers from API */}
         {answers.map((answer) => (
-          <div key={answer.id} className="flex space-x-6 mb-8 border-b border-gray-200 pb-8">
-            {/* Vote Column */}
-            <div className="flex flex-col items-center space-y-2">
-              <button 
-                className={`p-2 rounded border transition-colors ${
-                  votingStates.answers[answer.id]?.userVote === 'up' 
-                    ? 'bg-orange-100 border-orange-300 text-orange-600' 
-                    : 'hover:bg-gray-100 border-gray-300 text-gray-600'
-                } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => handleAnswerVote(answer.id, 'up')}
-                disabled={votingStates.answers[answer.id]?.isVoting}
-                title="This answer is useful"
-              >
-                <ArrowUp className="w-6 h-6" />
-              </button>
-              <span className={`text-2xl font-semibold ${
-                answer.votes > 0 ? 'text-green-600' : 
-                answer.votes < 0 ? 'text-red-600' : 'text-gray-700'
-              }`}>
-                {answer.votes}
-              </span>
-              <button 
-                className={`p-2 rounded border transition-colors ${
-                  votingStates.answers[answer.id]?.userVote === 'down' 
-                    ? 'bg-red-100 border-red-300 text-red-600' 
-                    : 'hover:bg-gray-100 border-gray-300 text-gray-600'
-                } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => handleAnswerVote(answer.id, 'down')}
-                disabled={votingStates.answers[answer.id]?.isVoting}
-                title="This answer is not useful"
-              >
-                <ArrowDown className="w-6 h-6" />
-              </button>
-              {answer.is_accepted && (
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              )}
-            </div>
-
-            {/* Answer Content */}
-            <div className="flex-1">
-              <div className="prose max-w-none mb-4">
-                <p>{answer.body}</p>
+          <div key={answer.id} className="mb-8 border-b border-gray-200 pb-8">
+            <div className="flex space-x-6">
+              {/* Vote Column */}
+              <div className="flex flex-col items-center space-y-2">
+                <button 
+                  className={`p-2 rounded border transition-colors ${
+                    votingStates.answers[answer.id]?.userVote === 'up' 
+                      ? 'bg-orange-100 border-orange-300 text-orange-600' 
+                      : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+                  } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => handleAnswerVote(answer.id, 'up')}
+                  disabled={votingStates.answers[answer.id]?.isVoting}
+                  title="This answer is useful"
+                >
+                  <ArrowUp className="w-6 h-6" />
+                </button>
+                <span className={`text-2xl font-semibold ${
+                  answer.votes > 0 ? 'text-green-600' : 
+                  answer.votes < 0 ? 'text-red-600' : 'text-gray-700'
+                }`}>
+                  {answer.votes}
+                </span>
+                <button 
+                  className={`p-2 rounded border transition-colors ${
+                    votingStates.answers[answer.id]?.userVote === 'down' 
+                      ? 'bg-red-100 border-red-300 text-red-600' 
+                      : 'hover:bg-gray-100 border-gray-300 text-gray-600'
+                  } ${votingStates.answers[answer.id]?.isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => handleAnswerVote(answer.id, 'down')}
+                  disabled={votingStates.answers[answer.id]?.isVoting}
+                  title="This answer is not useful"
+                >
+                  <ArrowDown className="w-6 h-6" />
+                </button>
+                {answer.is_accepted && (
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                )}
               </div>
-              
-              {/* Answer Author Info */}
-              <div className="flex justify-end">
-                <div className="bg-blue-50 p-3 rounded">
-                  <div className="text-xs text-gray-600 mb-2">
-                    answered {new Date(answer.created_at).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-gray-300 rounded"></div>
-                    <div>
-                      <div className="font-semibold text-blue-600">User {answer.author_id}</div>
-                      <div className="text-xs text-gray-600">Reputation: 100</div>
+
+              {/* Answer Content */}
+              <div className="flex-1">
+                <div className="prose max-w-none mb-4">
+                  <p>{answer.body}</p>
+                </div>
+                
+                {/* Answer Author Info */}
+                <div className="flex justify-end">
+                  <div className="bg-blue-50 p-3 rounded">
+                    <div className="text-xs text-gray-600 mb-2">
+                      answered {new Date(answer.created_at).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 bg-gray-300 rounded"></div>
+                      <div>
+                        <div className="font-semibold text-blue-600">User {answer.author_id}</div>
+                        <div className="text-xs text-gray-600">Reputation: 100</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            
+            {/* Answer Comments - Now positioned below the answer */}
+            <CommentSection
+              answerId={answer.id}
+              comments={answerComments[answer.id] || []}
+              onCommentsUpdated={() => refreshAnswerComments(answer.id)}
+            />
           </div>
         ))}
 
