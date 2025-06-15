@@ -1,9 +1,9 @@
 import json
 import os
-from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from typing import List, Optional, Dict, Any, cast
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, insert, delete
-from .db.models import User, Question as DBQuestion, Answer as DBAnswer, Tag
+from .db.models import User, Question as DBQuestion, Answer as DBAnswer, Tag, Vote
 from .models import QuestionSummary, PaginatedResponse, SearchRequest, SearchResponse
 import math
 from datetime import datetime
@@ -50,7 +50,11 @@ class DataService:
     
     def get_questions(self, skip: int = 0, limit: int = 10, sort: str = "newest") -> List[DBQuestion]:
         """Get a list of questions with pagination"""
-        query = self.db.query(DBQuestion)
+        query = self.db.query(DBQuestion).options(
+            joinedload(DBQuestion.author),
+            joinedload(DBQuestion.tags),
+            joinedload(DBQuestion.answers)
+        )
         
         if sort == "newest":
             query = query.order_by(DBQuestion.created_at.desc())
@@ -67,7 +71,11 @@ class DataService:
     
     def get_questions_by_user(self, user_id: int, page: int = 1, limit: int = 15) -> PaginatedResponse:
         """Get questions by user with pagination"""
-        query = self.db.query(DBQuestion).filter(DBQuestion.author_id == user_id)
+        query = self.db.query(DBQuestion).options(
+            joinedload(DBQuestion.author),
+            joinedload(DBQuestion.tags),
+            joinedload(DBQuestion.answers)
+        ).filter(DBQuestion.author_id == user_id)
         total = query.count()
         questions = query.offset((page - 1) * limit).limit(limit).all()
         
@@ -122,7 +130,11 @@ class DataService:
         if not tag:
             return PaginatedResponse(items=[], total=0, page=page, limit=limit)
         
-        query = self.db.query(DBQuestion).filter(DBQuestion.tags.contains([tag_name]))
+        query = self.db.query(DBQuestion).options(
+            joinedload(DBQuestion.author),
+            joinedload(DBQuestion.tags),
+            joinedload(DBQuestion.answers)
+        ).filter(DBQuestion.tags.contains([tag_name]))
         
         if sort == "newest":
             query = query.order_by(DBQuestion.created_at.desc())
@@ -296,28 +308,100 @@ class DataService:
         return db_answer
     
     def vote_question(self, question_id: int, user_id: int, vote_type: str):
-        """Vote on a question"""
+        """Vote on a question - prevents duplicate votes"""
         question = self.get_question(question_id)
         if not question:
             raise ValueError("Question not found")
+            
+        # Check if user has already voted on this question
+        existing_vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.question_id == question_id
+        ).first()
         
-        if vote_type == "up":
-            self.db.query(DBQuestion).filter(DBQuestion.id == question_id).update({DBQuestion.votes: DBQuestion.votes + 1})
-        elif vote_type == "down":
-            self.db.query(DBQuestion).filter(DBQuestion.id == question_id).update({DBQuestion.votes: DBQuestion.votes - 1})
+        if existing_vote:
+            # If user is changing their vote
+            current_vote_type = cast(str, existing_vote.vote_type)
+            if current_vote_type != vote_type:
+                # Remove old vote effect and add new vote effect
+                old_vote_effect = 1 if current_vote_type == "up" else -1
+                new_vote_effect = 1 if vote_type == "up" else -1
+                vote_delta = new_vote_effect - old_vote_effect
+                
+                # Update the vote record
+                setattr(existing_vote, 'vote_type', vote_type)
+                setattr(existing_vote, 'created_at', datetime.utcnow())
+                
+                # Update question vote count
+                self.db.query(DBQuestion).filter(DBQuestion.id == question_id).update({
+                    DBQuestion.votes: DBQuestion.votes + vote_delta
+                })
+            # If user is trying to vote the same way again, do nothing (prevent duplicate)
+            else:
+                return  # No change needed
+        else:
+            # Create new vote
+            new_vote = Vote(
+                user_id=user_id,
+                question_id=question_id,
+                vote_type=vote_type
+            )
+            self.db.add(new_vote)
+            
+            # Update question vote count
+            vote_delta = 1 if vote_type == "up" else -1
+            self.db.query(DBQuestion).filter(DBQuestion.id == question_id).update({
+                DBQuestion.votes: DBQuestion.votes + vote_delta
+            })
         
         self.db.commit()
     
     def vote_answer(self, answer_id: int, user_id: int, vote_type: str):
-        """Vote on an answer"""
+        """Vote on an answer - prevents duplicate votes"""
         answer = self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).first()
         if not answer:
             raise ValueError("Answer not found")
+            
+        # Check if user has already voted on this answer
+        existing_vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.answer_id == answer_id
+        ).first()
         
-        if vote_type == "up":
-            self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).update({DBAnswer.votes: DBAnswer.votes + 1})
-        elif vote_type == "down":
-            self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).update({DBAnswer.votes: DBAnswer.votes - 1})
+        if existing_vote:
+            # If user is changing their vote
+            current_vote_type = cast(str, existing_vote.vote_type)
+            if current_vote_type != vote_type:
+                # Remove old vote effect and add new vote effect
+                old_vote_effect = 1 if current_vote_type == "up" else -1
+                new_vote_effect = 1 if vote_type == "up" else -1
+                vote_delta = new_vote_effect - old_vote_effect
+                
+                # Update the vote record
+                setattr(existing_vote, 'vote_type', vote_type)
+                setattr(existing_vote, 'created_at', datetime.utcnow())
+                
+                # Update answer vote count
+                self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).update({
+                    DBAnswer.votes: DBAnswer.votes + vote_delta
+                })
+            # If user is trying to vote the same way again, do nothing (prevent duplicate)
+            else:
+                return  # No change needed
+        else:
+            # Create new vote
+            new_vote = Vote(
+                user_id=user_id,
+                answer_id=answer_id,
+                vote_type=vote_type
+            )
+            self.db.add(new_vote)
+            
+            # Update answer vote count
+            vote_delta = 1 if vote_type == "up" else -1
+            self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).update({
+                DBAnswer.votes: DBAnswer.votes + vote_delta
+            })
         
         self.db.commit()
     
@@ -463,3 +547,135 @@ class DataService:
         result = self.db.execute(stmt)
         self.db.commit()
         return result.rowcount > 0
+
+    def get_user_vote_on_question(self, question_id: int, user_id: int) -> Optional[str]:
+        """Get user's vote on a question"""
+        vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.question_id == question_id
+        ).first()
+        
+        if vote:
+            return cast(str, vote.vote_type)
+        return None
+    
+    def get_user_vote_on_answer(self, answer_id: int, user_id: int) -> Optional[str]:
+        """Get user's vote on an answer"""
+        vote = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.answer_id == answer_id
+        ).first()
+        
+        if vote:
+            return cast(str, vote.vote_type)
+        return None
+    
+    def get_user_votes_on_question_answers(self, question_id: int, user_id: int) -> Dict[int, str]:
+        """Get user's votes on all answers for a question"""
+        # First get all answer IDs for this question
+        answer_ids = self.db.query(DBAnswer.id).filter(DBAnswer.question_id == question_id).all()
+        answer_ids = [cast(int, aid[0]) for aid in answer_ids]
+        
+        # Get user votes on these answers
+        votes = self.db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.answer_id.in_(answer_ids)
+        ).all()
+        
+        return {cast(int, vote.answer_id): cast(str, vote.vote_type) for vote in votes}
+
+    # Comment methods
+    def create_comment(self, question_id: Optional[int], answer_id: Optional[int], user_id: int, content: str):
+        """Create a new comment on a question or answer"""
+        from .db.models import Comment as DBComment
+        
+        # Validate that comment is either on question or answer, not both
+        if (question_id is None and answer_id is None) or (question_id is not None and answer_id is not None):
+            raise ValueError("Comment must be on either a question or an answer, not both or neither")
+            
+        # Verify the target exists
+        if question_id:
+            question = self.get_question(question_id)
+            if not question:
+                raise ValueError("Question not found")
+        
+        if answer_id:
+            answer = self.db.query(DBAnswer).filter(DBAnswer.id == answer_id).first()
+            if not answer:
+                raise ValueError("Answer not found")
+        
+        # Create comment
+        comment = DBComment(
+            body=content,
+            author_id=user_id,
+            question_id=question_id,
+            answer_id=answer_id
+        )
+        
+        self.db.add(comment)
+        self.db.commit()
+        self.db.refresh(comment)
+        
+        return comment
+    
+    def get_comments_for_question(self, question_id: int):
+        """Get all comments for a question"""
+        from .db.models import Comment as DBComment
+        
+        return self.db.query(DBComment).filter(
+            DBComment.question_id == question_id
+        ).order_by(DBComment.created_at.desc()).all()
+    
+    def get_comments_for_answer(self, answer_id: int):
+        """Get all comments for an answer"""
+        from .db.models import Comment as DBComment
+        
+        return self.db.query(DBComment).filter(
+            DBComment.answer_id == answer_id
+        ).order_by(DBComment.created_at.desc()).all()
+    
+    def vote_comment(self, comment_id: int, user_id: int):
+        """Vote on a comment - only upvotes allowed"""
+        from .db.models import Comment as DBComment, CommentVote
+        
+        comment = self.db.query(DBComment).filter(DBComment.id == comment_id).first()
+        if not comment:
+            raise ValueError("Comment not found")
+            
+        # Check if user has already voted on this comment
+        existing_vote = self.db.query(CommentVote).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id == comment_id
+        ).first()
+        
+        if existing_vote:
+            # User is trying to vote again - remove the vote (toggle)
+            self.db.delete(existing_vote)
+            self.db.query(DBComment).filter(DBComment.id == comment_id).update({
+                DBComment.votes: DBComment.votes - 1
+            })
+        else:
+            # Create new vote
+            new_vote = CommentVote(
+                user_id=user_id,
+                comment_id=comment_id
+            )
+            self.db.add(new_vote)
+            
+            # Update comment vote count
+            self.db.query(DBComment).filter(DBComment.id == comment_id).update({
+                DBComment.votes: DBComment.votes + 1
+            })
+        
+        self.db.commit()
+    
+    def get_user_comment_vote(self, comment_id: int, user_id: int) -> bool:
+        """Check if user has voted on a comment"""
+        from .db.models import CommentVote
+        
+        vote = self.db.query(CommentVote).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id == comment_id
+        ).first()
+        
+        return vote is not None

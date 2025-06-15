@@ -52,6 +52,9 @@ class User(Base):
     answers = relationship("Answer", back_populates="author", cascade="all, delete-orphan")
     votes = relationship("Vote", back_populates="user", cascade="all, delete-orphan")
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
+    comment_votes = relationship("CommentVote", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -71,6 +74,8 @@ class Question(Base):
     answers = relationship("Answer", back_populates="question")
     tags = relationship("Tag", secondary="question_tags", back_populates="questions")
     question_votes = relationship("Vote", back_populates="question")
+    comments = relationship("Comment", back_populates="question")
+    comments = relationship("Comment", back_populates="question")
 
 class Answer(Base):
     __tablename__ = "answers"
@@ -88,6 +93,8 @@ class Answer(Base):
     author = relationship("User", back_populates="answers")
     question = relationship("Question", back_populates="answers")
     answer_votes = relationship("Vote", back_populates="answer")
+    comments = relationship("Comment", back_populates="answer")
+    comments = relationship("Comment", back_populates="answer")
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -159,4 +166,42 @@ class AnalyticsLog(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Relationships
-    user = relationship("User") 
+    user = relationship("User")
+
+class Comment(Base):
+    __tablename__ = "comments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    body = Column(Text, nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    answer_id = Column(Integer, ForeignKey("answers.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    votes = Column(Integer, default=0)
+    
+    # Add constraint to ensure comment is either on question or answer, not both
+    __table_args__ = (
+        CheckConstraint(
+            '(question_id IS NOT NULL AND answer_id IS NULL) OR (question_id IS NULL AND answer_id IS NOT NULL)',
+            name='comment_target_constraint'
+        ),
+    )
+    
+    # Relationships
+    author = relationship("User", back_populates="comments")
+    question = relationship("Question", back_populates="comments")
+    answer = relationship("Answer", back_populates="comments")
+    comment_votes = relationship("CommentVote", back_populates="comment")
+
+class CommentVote(Base):
+    __tablename__ = "comment_votes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    comment_id = Column(Integer, ForeignKey("comments.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="comment_votes")
+    comment = relationship("Comment", back_populates="comment_votes")

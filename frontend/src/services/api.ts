@@ -227,6 +227,50 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // Get user vote status
+  async getUserVoteOnQuestion(questionId: number, userId: number) {
+    return this.request(`/questions/${questionId}/user_vote?user_id=${userId}`);
+  }
+
+  async getUserVotesOnQuestion(questionId: number, userId: number) {
+    return this.request(`/questions/${questionId}/user_votes?user_id=${userId}`);
+  }
+
+  async getUserVoteOnAnswer(answerId: number, userId: number) {
+    return this.request(`/answers/${answerId}/user_vote?user_id=${userId}`);
+  }
+
+  // Comment methods
+  async createComment(authorId: number, body: string, questionId?: number, answerId?: number): Promise<ApiResponse<any>> {
+    return this.request('/comments/', {
+      method: 'POST',
+      body: JSON.stringify({
+        question_id: questionId,
+        answer_id: answerId,
+        author_id: authorId,
+        body: body
+      })
+    });
+  }
+
+  async getQuestionComments(questionId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/comments/question/${questionId}`);
+  }
+
+  async getAnswerComments(answerId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/comments/answer/${answerId}`);
+  }
+
+  async voteComment(commentId: number, userId: number): Promise<ApiResponse<any>> {
+    return this.request(`/comments/${commentId}/vote?user_id=${userId}`, {
+      method: 'POST'
+    });
+  }
+
+  async getCommentVoteStatus(commentId: number, userId: number): Promise<ApiResponse<{has_voted: boolean}>> {
+    return this.request(`/comments/${commentId}/vote-status/${userId}`);
+  }
 }
 
 const apiService = ApiService.getInstance();
