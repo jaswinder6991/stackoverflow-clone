@@ -129,8 +129,46 @@ class ApiService {
   }
 
   // Questions
-  async getQuestions() {
-    return this.request('/questions');
+  async getQuestions(params?: {
+    skip?: number;
+    limit?: number;
+    sort?: string;
+    tag?: string;
+    user_id?: number;
+  }) {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.skip !== undefined) {
+      searchParams.append('skip', params.skip.toString());
+    }
+    if (params?.limit !== undefined) {
+      searchParams.append('limit', params.limit.toString());
+    }
+    if (params?.sort) {
+      searchParams.append('sort', params.sort);
+    }
+    if (params?.tag) {
+      searchParams.append('tag', params.tag);
+    }
+    if (params?.user_id !== undefined) {
+      searchParams.append('user_id', params.user_id.toString());
+    }
+    
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/questions?${queryString}` : '/questions';
+    
+    return this.request(endpoint);
+  }
+
+  async getQuestionsByUser(userId: number, params?: {
+    skip?: number;
+    limit?: number;
+    sort?: string;
+  }) {
+    return this.getQuestions({
+      user_id: userId,
+      ...params
+    });
   }
 
   async getQuestion(id: number) {
@@ -167,7 +205,7 @@ class ApiService {
   }
 
   async getUser(id: number) {
-    return this.request(`/users/${id}`);
+    return this.request(`/api/users/${id}`);
   }
 
   async updateProfile(profileData: any, userId: number) {

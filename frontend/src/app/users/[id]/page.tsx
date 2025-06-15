@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Question } from "@/lib/sampleData";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import apiService from "@/services/api";
 
 interface TabProps {
   label: string;
@@ -52,7 +53,7 @@ const QuestionCard = ({ question }: { question: Question }) => {
           </p>
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <span>{question.votes} votes</span>
-            <span>{question.answers.length} answers</span>
+            <span>{question.answers?.length || 0} answers</span>
             <span>{question.views} views</span>
             <span>asked {question.asked}</span>
           </div>
@@ -87,12 +88,22 @@ export default function UserProfile() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`/api/users/${params.id}/questions?page=1&limit=10`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch questions');
+        const response = await apiService.getQuestionsByUser(
+          parseInt(params.id as string),
+          {
+            skip: 0,
+            limit: 10,
+            sort: 'newest'
+          }
+        );
+        
+        if (response.error) {
+          throw new Error(response.error);
         }
-        const data = await response.json();
-        setUserQuestions(data.items); // The API returns items in a PaginatedResponse format
+        
+        // The backend returns a PaginatedResponse with items array
+        const data = response.data as any;
+        setUserQuestions(data?.items || []);
       } catch (err) {
         setError('Failed to load questions');
         console.error('Error fetching questions:', err);
