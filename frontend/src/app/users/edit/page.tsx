@@ -4,10 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import apiService from "@/services/api";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function EditProfile() {
   const { user, updateUser, refreshUser } = useAuth();
   const router = useRouter();
+  const { handleClick, handleKeyPress } = useAnalytics();
   const [formData, setFormData] = useState({
     displayName: user?.name || "",
     location: user?.profile?.basic?.location || "",
@@ -36,10 +38,15 @@ export default function EditProfile() {
         [field]: value
       }));
     }
+    
+    // Log the input change
+    handleKeyPress(`edit-profile-${field}`, `User updated ${field} field`, value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    handleClick('save-profile-changes', 'User clicked Save Profile Changes button');
+    
     try {
       await updateUser({
         basic: {
@@ -54,9 +61,11 @@ export default function EditProfile() {
       });
       // Refresh user data before redirecting
       await refreshUser();
+      handleClick('profile-update-success', 'User successfully updated profile');
       router.push(`/users/${user?.id}`);
     } catch (error) {
       console.error("Failed to update profile:", error);
+      handleClick('profile-update-error', 'Profile update failed');
     }
   };
 
@@ -114,29 +123,61 @@ export default function EditProfile() {
               <div className="border border-gray-300 rounded-md">
                 <div className="border-b border-gray-300 px-2 py-1 bg-gray-50">
                   <div className="flex gap-2">
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-bold-button', 'User clicked Bold button in editor', e)}
+                    >
                       <span className="font-bold">B</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded italic">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded italic"
+                      onClick={(e) => handleClick('editor-italic-button', 'User clicked Italic button in editor', e)}
+                    >
                       <span>I</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-link-button', 'User clicked Link button in editor', e)}
+                    >
                       <span>🔗</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-quote-button', 'User clicked Quote button in editor', e)}
+                    >
                       <span>"</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-code-button', 'User clicked Code button in editor', e)}
+                    >
                       <span>{`{}`}</span>
                     </button>
                     <div className="h-4 w-px bg-gray-300 mx-1"></div>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-bullet-button', 'User clicked Bullet list button in editor', e)}
+                    >
                       <span>•</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-number-button', 'User clicked Number list button in editor', e)}
+                    >
                       <span>1.</span>
                     </button>
-                    <button type="button" className="p-1 hover:bg-gray-200 rounded">
+                    <button 
+                      type="button" 
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={(e) => handleClick('editor-heading-button', 'User clicked Heading button in editor', e)}
+                    >
                       <span>=</span>
                     </button>
                   </div>
@@ -199,18 +240,14 @@ export default function EditProfile() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12" />
-                    </svg>
-                  </span>
+                  <span className="text-gray-500">📧</span>
                 </div>
                 <input
                   type="text"
                   value={formData.links.github}
                   onChange={(e) => handleInputChange("links.github", e.target.value)}
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="username"
+                  placeholder="@username"
                 />
               </div>
             </div>
@@ -218,19 +255,22 @@ export default function EditProfile() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Save profile
-          </button>
+        <div className="flex justify-between">
           <button
             type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            onClick={(e) => {
+              handleClick('cancel-edit-profile', 'User clicked Cancel button in edit profile', e);
+              router.back();
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
           >
             Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Save Profile
           </button>
         </div>
       </form>

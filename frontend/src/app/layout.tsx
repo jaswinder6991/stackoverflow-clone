@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AnalyticsProvider } from '@/components/AnalyticsProvider';
 
 export const metadata: Metadata = {
   title: "Stack Overflow",
@@ -15,7 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AnalyticsProvider>
+            {children}
+          </AnalyticsProvider>
+        </AuthProvider>
       </body>
     </html>
   );

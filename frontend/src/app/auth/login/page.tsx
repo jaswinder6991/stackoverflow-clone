@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { logEvent, ActionType } from '@/services/analyticsLogger';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { login } = useAuth();
+  const { handleClick, handleKeyPress } = useAnalytics();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,13 +20,8 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      // Log successful login
-      logEvent('login-session', ActionType.CLICK, {
-        text: 'User logged in successfully',
-        page_url: window.location.href,
-        element_identifier: 'login-submit-btn',
-        coordinates: { x: 0, y: 0 }
-      });
+      // Log successful login with session ID
+      handleClick('login-submit-btn', `User logged in successfully with username: ${username}`);
       router.push('/');
     } catch (err) {
       if (err instanceof Error) {
@@ -41,13 +38,8 @@ export default function LoginPage() {
       } else {
         setError('Login failed. Please check your credentials and try again.');
       }
-      // Log failed login
-      logEvent('login-session', ActionType.CLICK, {
-        text: 'Login attempt failed',
-        page_url: window.location.href,
-        element_identifier: 'login-submit-btn',
-        coordinates: { x: 0, y: 0 }
-      });
+      // Log failed login attempt
+      handleClick('login-submit-btn', `Login attempt failed for username: ${username}`);
     }
   };
 
@@ -73,7 +65,13 @@ export default function LoginPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUsername(value);
+                  if (value.trim()) {
+                    handleKeyPress('username-input', `User typed username: ${value}`, value);
+                  }
+                }}
               />
             </div>
             <div>
@@ -88,7 +86,13 @@ export default function LoginPage() {
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPassword(value);
+                  if (value.trim()) {
+                    handleKeyPress('password-input', 'User typed password credentials', '***');
+                  }
+                }}
               />
             </div>
           </div>
@@ -102,6 +106,9 @@ export default function LoginPage() {
               type="submit"
               id="login-submit-btn"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={(e) => {
+                handleClick('login-submit-btn', `User clicked login button with username: ${username}`, e);
+              }}
             >
               Sign in
             </button>

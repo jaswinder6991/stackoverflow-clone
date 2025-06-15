@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import apiService from '../services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 export default function QuestionForm() {
   const router = useRouter();
   const { user } = useAuth();
+  const { handleClick, handleKeyPress } = useAnalytics();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -188,7 +190,13 @@ export default function QuestionForm() {
             id="question-title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setTitle(value);
+              if (value.trim()) {
+                handleKeyPress('question-title', `User typed "${value}" into question title field`, value);
+              }
+            }}
             placeholder="e.g. Is there an R function for finding the index of an element in a vector?"
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
             maxLength={150}
@@ -216,7 +224,13 @@ export default function QuestionForm() {
             <textarea
               id="question-body"
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setBody(value);
+                if (value.trim()) {
+                  handleKeyPress('question-body', `User typed content into question body field`, value.substring(0, 50) + (value.length > 50 ? '...' : ''));
+                }
+              }}
               placeholder="Enter your question details here..."
               className="w-full px-3 py-2 min-h-[200px] resize-y focus:outline-none focus:border-blue-500"
               required
@@ -246,7 +260,10 @@ export default function QuestionForm() {
                 <span>{tag}</span>
                 <button 
                   type="button" 
-                  onClick={() => handleRemoveTag(tag)}
+                  onClick={(e) => {
+                    handleRemoveTag(tag);
+                    handleClick('remove-tag', `User removed tag "${tag}"`, e);
+                  }}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   &times;
@@ -257,7 +274,13 @@ export default function QuestionForm() {
               id="question-tags"
               type="text"
               value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTagInput(value);
+                if (value.trim()) {
+                  handleKeyPress('question-tags', `User typed "${value}" in tags field`, value);
+                }
+              }}
               onKeyDown={handleTagInputKeyDown}
               placeholder={tags.length === 0 ? "e.g. (javascript react node.js)" : ""}
               className="flex-grow px-1 py-1 focus:outline-none"
@@ -269,7 +292,10 @@ export default function QuestionForm() {
               {filteredTags.map(tag => (
                 <div 
                   key={tag}
-                  onClick={() => handleAddTag(tag)}
+                  onClick={(e) => {
+                    handleAddTag(tag);
+                    handleClick('add-suggested-tag', `User added suggested tag "${tag}"`, e);
+                  }}
                   className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                 >
                   {tag}
@@ -293,13 +319,19 @@ export default function QuestionForm() {
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
+            onClick={(e) => {
+              if (!isSubmitting && title.trim() && body.trim() && tags.length > 0) {
+                handleClick('submit-question', `User clicked submit question button with title: "${title.substring(0, 50)}..."`, e);
+              }
+            }}
           >
             {isSubmitting ? 'Posting...' : 'Post your question'}
           </button>
           
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              handleClick('discard-question', 'User clicked discard question button', e);
               if (confirm('Are you sure you want to discard this question?')) {
                 router.push('/');
               }
