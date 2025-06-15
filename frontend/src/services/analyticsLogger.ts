@@ -98,9 +98,16 @@ export interface Log {
 export const getSessionId = (): string => {
   if (typeof window === 'undefined') return '';
   
+  // First, try to use auth token as session_id for logged-in users
+  const authToken = localStorage.getItem('token');
+  if (authToken) {
+    return authToken;
+  }
+  
+  // Fallback to anonymous session for non-logged users
   let sessionId = localStorage.getItem('analytics_session_id');
   if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionId = `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('analytics_session_id', sessionId);
   }
   return sessionId;

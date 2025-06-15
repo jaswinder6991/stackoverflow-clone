@@ -37,27 +37,31 @@ async def new_session(seed: Optional[int] = None, response: Response = None):
 async def log_event(
     request: Request,
     event: Dict[str, Any],
+    session_id: Optional[str] = None,  # Accept as query parameter
     db: Session = Depends(get_db)
 ):
     """Log a custom event"""
     try:
-        # Get or create session ID
-        session_id = request.cookies.get("session_id")
+        # Get session_id from query parameter (now auth token for logged users)
         if not session_id:
-            session_id = str(uuid.uuid4())
-            response = Response()
-            response.set_cookie(
-                key="session_id",
-                value=session_id,
-                httponly=True,
-                max_age=3600,
-                samesite="lax"
-            )
+            session_id = request.query_params.get("session_id")
+        
+        # If still no session_id, create a new anonymous one
+        if not session_id:
+            session_id = f"anonymous_{uuid.uuid4()}"
+        
+        # Parse the event data properly
+        # The frontend sends: {"actionType": "scroll", "payload": {...}}
+        action_type = event.get("actionType", "CUSTOM")
+        payload_data = event.get("payload", {})
+        
+        # Determine if this is an authenticated user (session_id is a JWT token)
+        is_authenticated = not session_id.startswith("anonymous_")
         
         # Create analytics log
         log = AnalyticsLog(
             session_id=session_id,
-            event_type=event.get("type", "CUSTOM"),
+            event_type=action_type,  # Use actionType from the parsed event
             event_data=json.dumps(event),
             timestamp=datetime.utcnow()
         )
@@ -66,31 +70,41 @@ async def log_event(
         db.add(log)
         db.commit()
         
-        return {"status": "success", "session_id": session_id}
+        return {
+            "status": "success", 
+            "session_id": session_id,
+            "logged_action": action_type,
+            "is_authenticated": is_authenticated
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/logs")
 async def get_logs(
-    session_id: str = Cookie(None),
+    request: Request,
+    session_id: Optional[str] = None,  # Accept as query parameter
     db: Session = Depends(get_db)
 ):
     """Get logs for a session"""
+    # Get session_id from query parameter (now auth token for logged users)
+    if not session_id:
+        session_id = request.query_params.get("session_id")
+    
     if not session_id:
         raise HTTPException(status_code=400, detail="No session ID provided")
     
     logs = db.query(AnalyticsLog).filter(
         AnalyticsLog.session_id == session_id
-    ).order_by(AnalyticsLog.created_at.desc()).all()
+    ).order_by(AnalyticsLog.timestamp.desc()).all()
     
     return {
         "logs": [
             {
                 "id": log.id,
-                "action_type": log.action_type,
-                "page_url": log.page_url,
-                "payload": log.payload,
-                "created_at": log.created_at.isoformat()
+                "event_type": log.event_type,  # Use the correct field name
+                "session_id": log.session_id,
+                "event_data": log.event_data,
+                "timestamp": log.timestamp.isoformat() if log.timestamp else None
             }
             for log in logs
         ]
@@ -121,4 +135,4 @@ async def populate_db(db: Session = Depends(get_db)):
         populate_database(db)
         return {"status": "success", "message": "Database populated with sample data"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
